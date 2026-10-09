@@ -2,6 +2,9 @@
 
 Reduce background noise in recorded speech, directly in your browser. GTCRN runs locally using WebAssembly; uploaded recordings and microphone data are not sent to a server.
 
+![Voice Cleaner with a recording loaded](assets/screenshot-en.png)
+
+
 ## Features
 
 - Open audio or video files supported by the browser's audio decoder
