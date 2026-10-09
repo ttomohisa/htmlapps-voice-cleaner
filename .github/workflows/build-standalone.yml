@@ -34,6 +34,12 @@ jobs:
         shell: powershell
         run: .\scripts\check-powershell-syntax.ps1
 
+      - name: Initialize migration dependency lock (temporary)
+        shell: pwsh
+        run: |
+          ./scripts/sync-dependency-lock.ps1
+          Get-Content -Raw dependencies.lock.json
+
       - name: Build and verify standalone HTML
         shell: pwsh
         run: ./scripts/check-repository.ps1

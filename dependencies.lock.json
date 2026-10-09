@@ -1,5 +1,12 @@
 {
   "$schema": "./schemas/dependencies-lock.schema.json",
   "schemaVersion": 1,
-  "dependencies": []
+  "dependencies": [
+    {
+      "id": "gtcrn-wasm",
+      "package": "@sapphi-red/gtcrn-wasm",
+      "version": "0.0.3",
+      "tarballSha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ]
 }

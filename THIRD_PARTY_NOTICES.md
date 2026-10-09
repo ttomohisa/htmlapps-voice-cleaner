@@ -1,15 +1,9 @@
-# Third-Party Notices
+# Third-party notices
 
-The default generated starter application contains no bundled third-party library code.
+Voice Cleaner embeds these dependencies when building the standalone HTML.
 
-Browser APIs and system fonts are used directly. The GitHub Actions workflows reference their respective GitHub-maintained actions under the terms published by those projects.
+- **GTCRN**, copyright (c) 2024 Rong Xiaobin — MIT License. https://github.com/Xiaobin-Rong/gtcrn
+- **@sapphi-red/gtcrn-wasm 0.0.3**, copyright (c) 2026 sapphi-red — MIT License. https://github.com/sapphi-red/gtcrn-wasm
+- **PFFFT**, developed by Julien Pommier, UCAR/NCAR and contributors — redistribution and attribution terms described in https://github.com/marton78/pffft/blob/master/LICENSE.txt
 
-When adding a package to `dependencies.json`:
-
-1. Add its name, exact version, license, and homepage to this file.
-2. Sync and commit the corresponding `dependencies.lock.json` entry.
-3. Include every copyright notice and license text required for redistribution.
-4. Update both README files when the dependency materially affects privacy, size, or capability.
-5. Commit the regenerated `dist/dependency-manifest.json` only if the repository policy chooses to track generated artifacts.
-
-Do not assume that a package being available from npm makes it compatible with MIT redistribution.
+The build artifact includes upstream notices from the npm distribution. Refer to the linked upstream LICENSE files for the complete license terms.
