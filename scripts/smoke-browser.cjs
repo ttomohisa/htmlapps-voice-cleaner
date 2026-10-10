@@ -77,8 +77,10 @@ const server = http.createServer((req, res) => {
     await page.waitForFunction(() => {
       const result = document.querySelector('#resultSection');
       const error = document.querySelector('#processError');
-      return (result && !result.hidden) || (error && !error.hidden);
-    }, { timeout: 45000 });
+      // The error container is hidden by CSS when empty; its 'hidden' property is always false.
+      // Wait for actual content or a completed result instead of returning immediately.
+      return (result && !result.hidden) || (error && error.textContent.trim().length > 0);
+    }, null, { timeout: 45000 });
     const processError = await page.locator('#processError').evaluate(el => el.hidden ? '' : el.textContent);
     assert.equal(processError, '', 'GTCRN failed: ' + processError);
     assert.ok(await page.locator('#resultSection').isVisible(), 'Cleaned result is not visible');
