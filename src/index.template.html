@@ -869,7 +869,9 @@
           try{
             moduleUrl=d.moduleUrl; wasmBytes=new Uint8Array(d.wasmBuffer);
             const lib=await import(moduleUrl);
-            const mod=await lib.loadGtcrnModule({wasmBinary:wasmBytes});
+            // Emscripten attempts to resolve gtcrn.wasm relative to import.meta.url even when wasmBinary is supplied.
+            // The module is imported from a Blob URL in standalone mode, so supply locateFile to bypass that lookup.
+            const mod=await lib.loadGtcrnModule({wasmBinary:wasmBytes,locateFile:(path)=>path});
             const processor=new lib.GtcrnProcessor(mod,{sampleRate:16000});
             const input=new Float32Array(d.pcmBuffer); const frameSize=processor.frameSize||256; const frames=Math.ceil(input.length/frameSize); const raw=new Float32Array((frames+1)*frameSize); const frame=new Float32Array(frameSize);
             for(let n=0;n<=frames;n++){
