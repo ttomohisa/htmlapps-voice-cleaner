@@ -69,9 +69,9 @@ const server = http.createServer((req, res) => {
     await page.waitForFunction(() => {
       const b = document.querySelector('#processButton');
       const e = document.querySelector('#sourceError');
-      return (b && !b.disabled) || (e && !e.hidden);
-    }, { timeout: 20000 });
-    const decodeError = await page.locator('#sourceError').evaluate(el => el.hidden ? '' : el.textContent);
+      return (b && !b.disabled) || (e && e.textContent.trim().length > 0);
+    }, null, { timeout: 20000 });
+    const decodeError = await page.locator('#sourceError').textContent();
     assert.equal(decodeError, '', 'Input decode failed: ' + decodeError);
     await page.locator('#processButton').click();
     await page.waitForFunction(() => {
@@ -81,13 +81,21 @@ const server = http.createServer((req, res) => {
       // Wait for actual content or a completed result instead of returning immediately.
       return (result && !result.hidden) || (error && error.textContent.trim().length > 0);
     }, null, { timeout: 45000 });
-    const processError = await page.locator('#processError').evaluate(el => el.hidden ? '' : el.textContent);
+    const processError = await page.locator('#processError').textContent();
     assert.equal(processError, '', 'GTCRN failed: ' + processError);
     assert.ok(await page.locator('#resultSection').isVisible(), 'Cleaned result is not visible');
     const waveform = await page.locator('#afterWaveCanvas').evaluate(el => !!el.width && !!el.height);
     assert.ok(waveform, 'Cleaned waveform missing');
+    const downloadStarted = page.waitForEvent('download', { timeout: 10000 });
+    await page.locator('#saveButton').click();
+    const download = await downloadStarted;
+    const wavData = fs.readFileSync(await download.path());
+    assert.equal(wavData.toString('ascii', 0, 4), 'RIFF', 'WAV RIFF header missing');
+    assert.equal(wavData.toString('ascii', 8, 12), 'WAVE', 'WAV format header missing');
+    assert.equal(wavData.readUInt32LE(24), 16000, 'Incorrect WAV sample rate');
+    assert.ok(wavData.length > 32000, 'Exported WAV contains too little audio');
     assert.ok(logs.every(line => !line.startsWith('unexpected external request:')), 'Runtime requested external network');
-    console.log('[PASS] 2-second speech/noise WAV -> GTCRN WASM -> result and waveform; no external network.');
+    console.log('[PASS] 2-second speech/noise WAV -> GTCRN WASM -> playback result -> WAV download; no external network.');
   } catch (error) {
     console.error('[FAIL] Browser audio smoke test:', error.stack || error);
     for (const line of logs) console.error('  ' + line);
