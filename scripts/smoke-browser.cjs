@@ -117,7 +117,7 @@ const server = http.createServer((req, res) => {
     const waveform = await page.locator('#afterWaveCanvas').evaluate(el => !!el.width && !!el.height);
     assert.ok(waveform, 'Cleaned waveform missing');
     const downloadStarted = page.waitForEvent('download', { timeout: 10000 });
-    await page.locator('#saveButton').click();
+    await page.locator('#mobileSaveButton').click(); // Mobile fixed save action remains usable while the seek bar is on screen.
     const download = await downloadStarted;
     const wavData = fs.readFileSync(await download.path());
     assert.equal(wavData.toString('ascii', 0, 4), 'RIFF', 'WAV RIFF header missing');
