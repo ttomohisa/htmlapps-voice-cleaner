@@ -12,14 +12,14 @@ Reduce background noise in recorded speech, directly in your browser. GTCRN runs
 - Preview 10 seconds from the playhead or process the whole recording
 - Progress indication and cancellation
 - Compare original and cleaned audio at the same playback position
-- Waveform previews and WAV export with editable filename
+- Interactive waveform seek cursors (click, tap, drag, keyboard) linked across original/cleaned results; WAV export with editable filename
 - Desktop/mobile layout; Japanese and English
 
 ## How to use
 
 1. Choose an audio/video file or make a recording.
-2. Run a 10-second preview.
-3. Process the whole recording if needed, then switch between before and after.
+2. Seek on the source waveform and run a 10-second preview from that position.
+3. Process the whole recording if needed, then seek either result waveform and switch between before and after at the same position.
 4. Set the filename and save a WAV.
 
 ## Privacy and limitations

@@ -73,6 +73,20 @@ const server = http.createServer((req, res) => {
     }, null, { timeout: 20000 });
     const decodeError = await page.locator('#sourceError').textContent();
     assert.equal(decodeError, '', 'Input decode failed: ' + decodeError);
+    const sourceSeek = page.locator('#sourceWaveSeek');
+    assert.ok(await sourceSeek.isEnabled(), 'Source waveform seek bar must be enabled');
+    await sourceSeek.evaluate(el => {
+      el.value=String(Number(el.max)/2);
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.waitForFunction(()=>Math.abs(document.querySelector('#sourceAudio').currentTime - 1)<0.12,null,{timeout:10000});
+    assert.match(await page.locator('#sourceWaveDuration').textContent(),/0:01 \/ 0:02/);
+    await sourceSeek.focus();
+    await page.keyboard.press('Home');
+    await page.waitForFunction(()=>document.querySelector('#sourceAudio').currentTime<0.10,null,{timeout:10000});
+    await page.keyboard.press('End');
+    await page.waitForFunction(()=>document.querySelector('#sourceAudio').currentTime>1.8,null,{timeout:10000});
+    await page.keyboard.press('Home');
     await page.locator('#processButton').click();
     await page.waitForFunction(() => {
       const result = document.querySelector('#resultSection');
@@ -84,6 +98,22 @@ const server = http.createServer((req, res) => {
     const processError = await page.locator('#processError').textContent();
     assert.equal(processError, '', 'GTCRN failed: ' + processError);
     assert.ok(await page.locator('#resultSection').isVisible(), 'Cleaned result is not visible');
+    const beforeSeek=page.locator('#beforeWaveSeek');
+    const afterSeek=page.locator('#afterWaveSeek');
+    assert.ok(await beforeSeek.isEnabled() && await afterSeek.isEnabled(), 'Comparison waveforms must be seekable');
+    await afterSeek.evaluate(el=>{
+      el.value=String(Number(el.max)/2);
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.waitForFunction(()=>Math.abs(document.querySelector('#resultAudio').currentTime - 1)<0.12,null,{timeout:10000});
+    assert.ok(Math.abs(Number(await beforeSeek.inputValue())-Number(await afterSeek.inputValue()))<0.12,'Both waveform positions should agree');
+    await page.locator('#cleanedToggle').click();
+    await page.waitForFunction(()=>document.querySelector('#cleanedToggle').classList.contains('is-active') && Math.abs(document.querySelector('#resultAudio').currentTime - 1)<0.15,null,{timeout:10000});
+    await page.setViewportSize({width:390,height:844});
+    await beforeSeek.scrollIntoViewIfNeeded();
+    await beforeSeek.click(); // Native touch-sized slider interaction at the center.
+    await page.waitForFunction(()=>Math.abs(document.querySelector('#resultAudio').currentTime - 1)<0.2,null,{timeout:10000});
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Unexpected horizontal scroll on mobile');
     const waveform = await page.locator('#afterWaveCanvas').evaluate(el => !!el.width && !!el.height);
     assert.ok(waveform, 'Cleaned waveform missing');
     const downloadStarted = page.waitForEvent('download', { timeout: 10000 });

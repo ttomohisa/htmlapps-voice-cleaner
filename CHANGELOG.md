@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased (PR #1)
+
+- Added draggable, tappable, keyboard-accessible seek bars over source and comparison waveforms.
+- Waveform playheads track playback and both Before/After waveforms stay synchronized.
+
+
 ## 1.0.0 — Initial implementation
 
 - GTCRN WebAssembly background noise suppression.
