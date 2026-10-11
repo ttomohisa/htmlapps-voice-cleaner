@@ -1,37 +1,166 @@
 # Voice Cleaner / 音声ノイズ軽減
 
-ブラウザーだけで録音の背景ノイズを軽減するツールです。GTCRNを端末内のWebAssemblyで動かし、入力した音声・動画をサーバーへアップロードしません。
+[![Standalone HTML build](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/build-standalone.yml/badge.svg)](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/build-standalone.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-%2316624F)](LICENSE)
+[![Single HTML](https://img.shields.io/badge/distribution-single%20HTML-%2316624F)](#単一htmlとオフライン利用)
 
-![音声を読み込んだVoice Cleaner](assets/screenshot.png)
+[English README](README.md)
 
+Voice Cleanerは、**録音された声の背景ノイズをブラウザ内で軽減**するツールです。音声・動画から取り出した音声やマイク録音を処理し、元の音声と聞き比べてWAVで保存できます。ファイルをサーバーへアップロードする必要はありません。
 
-## できること
+## デモ
 
-- 録音済み音声・動画ファイルの読み込み（対応形式はブラウザーによって異なります）
-- マイクから直接録音（権限・安全なコンテキストが必要）
-- 再生位置から10秒間だけ試す／音声全体を処理
-- 処理進捗・キャンセル
-- 元音声と処理後の比較、波形上のシークバー表示・操作（クリック／タップ／ドラッグ／キーボード）
-- 処理済み音声をWAV形式で保存（ファイル名を編集可能）
-- PC・スマートフォン、日本語・英語の切り替え
+### [Voice Cleanerを開く（Cloudflare PR Preview）](https://r1412273626-pr-1-bk-previews.ttomohisa.workers.dev)
+
+登録・インストールは不要です。最初のHTMLはCloudflareから配信されますが、読み込んだ音声・動画、マイク録音、処理結果は端末内だけで扱われます。
+
+**注:** 上のURLは[PR #1](https://github.com/ttomohisa/htmlapps-voice-cleaner/pull/1)用の一時的なレビュー環境です。PRを閉じるとPreviewは削除されます。GitHub Pagesなどの恒久公開については[公開方法](#github-pagesで公開する)を参照してください。
+
+![音声を読み込んだVoice Cleanerの画面](assets/screenshot.png)
+
+[スマートフォン画面のスクリーンショット](assets/screenshot-mobile.png)
+
+## 主な機能
+
+- **背景ノイズを軽減** — GTCRNをWebAssemblyで実行し、エアコン・ファン・サー音などが混じった会話・録音の聞き取りやすさを改善します。効果は録音内容によって異なります。
+- **音声・動画を読み込む** — WAV、MP3、M4A、AAC、OGG、WebM、MP4などを選択またはドラッグ＆ドロップできます。実際の読み込み可否はブラウザのデコーダーに依存します。
+- **マイクから録音** — ブラウザの権限を許可すると、その場で録音してノイズを軽減できます。リアルタイム通話の音声を加工する機能ではありません。
+- **10秒だけ試せる** — 波形上で開始位置を選び、全体を処理する前に短い範囲で効果を確認できます。
+- **Before / Afterを比較** — 元の音声と処理後を同じ再生位置で切り替えられます。波形上のシークバーはクリック・タップ・ドラッグに対応し、処理前後の再生位置が連動します。
+- **WAVで保存** — 全体処理後に保存名を変更して、16 kHz・モノラル・16-bit PCM WAVとして書き出します。
+- **端末内で完結** — AIモデルと実行コードを単一HTMLに内包。日本語／英語UI、PC／スマートフォンに対応します。
+
+## すぐに使う
+
+### Webで試す
+
+上の[Cloudflare PR Preview](https://r1412273626-pr-1-bk-previews.ttomohisa.workers.dev)を開き、音声・動画を選択してください。インストールやユーザー登録は不要です。
+
+### 単一HTMLを使う
+
+ビルド済みファイルを入手した場合は、`voice-cleaner.html` または `dist/index.html` をブラウザで開きます。単一HTMLには処理に必要なJavaScript・WebAssembly・モデルが内包されています。オフラインでもファイルの読み込みと処理ができます。
+
+このリポジトリの[Actions](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/build-standalone.yml)で成功したビルドの成果物にも配布用HTMLが含まれます（ダウンロードにはGitHubへのサインインが必要な場合があります）。ソースの `src/index.template.html` をそのまま開くのではなく、生成済みHTMLを使用してください。
+
+### 自分でビルドする（Windows）
+
+1. このリポジトリをクローンまたはZIPでダウンロードします。
+2. `build-standalone.bat` を実行します。
+3. 初回は、`dependencies.json` でバージョン固定された依存パッケージを取得します。
+4. 生成された `voice-cleaner.html` または `dist/index.html` を任意の場所へコピーします。
+5. その後は、配布用HTMLをインターネット接続なしで開けます。
+
+通常のHTML生成にPythonやNode.jsは必要ありません。Windows PowerShellと `tar.exe` を利用します。マイク録音だけは、ブラウザによって `file://` で利用できない場合があります。
 
 ## 使い方
 
-1. 音声・動画を読み込むか、録音します。
-2. 波形上のシークバーで再生位置を選び、「現在位置から10秒試す」で効果を確認します。
-3. 必要なら全体を処理し、処理前・処理後の波形を連動してシークしながら聞き比べます。
-4. 出力ファイル名を確認してWAVを保存します。
+1. **音声を選ぶ** — 音声・動画ファイルをドラッグ＆ドロップするか、「ファイルを選択」から読み込みます。対応ブラウザならマイクでの録音も選べます。
+2. **位置を決める** — 波形をクリック・タップ・ドラッグして再生位置を移動します。通常の音声プレイヤーからも移動できます。
+3. **10秒試す** — 「現在位置から10秒試す」を押し、処理前後を聞き比べます。
+4. **全体を処理する** — 効果を確認できたら「ファイル全体をきれいにする」を押します。処理中は進捗が表示され、キャンセルできます。
+5. **聞き比べて保存** — 「元の音声」「処理後」を切り替えます。2本の結果波形は同じ再生位置へ連動します。ファイル名を編集し、「WAVで保存」を押します。
 
-## プライバシーと制約
+10秒プレビューは試聴用です。**WAV保存はファイル全体の処理後**に利用できます。ノイズ低減の強度調整はなく、GTCRNによる一定の処理を行います。
 
-処理は端末内で完結し、入力・録音データは送信されません。単一HTML版はGTCRN WASM、JS、モデルを内包し、処理中の外部通信は不要です。CSPは `connect-src 'none'` を指定します。
+### 波形の操作
 
-出力は **16 kHz・モノラルWAV** です。高音質の音楽変換や複数人の声の分離、残響の完全除去には向きません。再生できるファイル形式はブラウザーのデコーダーに依存します。長時間音声は端末メモリ・処理速度の制約を受けます。
+| 操作 | 動作 |
+| --- | --- |
+| 波形をクリック／タップ | その位置へシーク |
+| 波形上をドラッグ | 再生位置を移動 |
+| フォーカス中に `←` / `→` | シーク位置を微調整 |
+| フォーカス中に `Home` / `End` | 先頭／末尾へ移動 |
+| Before / Afterの波形を操作 | 両方の再生位置を同期 |
+
+スマートフォンでは下部の「音声」「ノイズ軽減」「保存」から主要操作へアクセスできます。保存ボタンは、全体の処理結果ができるまで無効です。
+
+## 単一HTMLとオフライン利用
+
+ビルド時に、固定された `@sapphi-red/gtcrn-wasm` のJavaScript・WASM（GTCRNのモデルを内包）をHTMLへ埋め込みます。ブラウザ内でのGTCRN推論はWeb Workerで実行します。
+
+生成される主なファイルは次のとおりです。
+
+| ファイル | 用途 |
+| --- | --- |
+| `voice-cleaner.html` | リポジトリ直下に生成される読みやすい単一HTML |
+| `dist/index.html` | 配布用の単一HTML（直下のHTMLと同一内容） |
+| `dist/index.self-extract.html` | gzip圧縮したHTMLを開くときに展開する小型の単一HTML |
+| `dist/dependency-manifest.json` | ビルドで内包した依存資産の情報 |
+| `dist/build-size-report.json` | 生成物サイズのレポート |
+
+自己展開版には `DecompressionStream` に対応するブラウザが必要です。マイク権限などのブラウザ制約は、単一HTMLでも適用されます。
+
+## GitHub Pagesで公開する
+
+リポジトリには、`main` へのプッシュ時にビルド・検証し、GitHub Pagesが有効ならデプロイするワークフローがあります。
+
+1. リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** に設定します。
+2. `main` に変更を反映するか、[Deploy standalone app to GitHub Pages](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml) を手動実行します。
+3. GitHub Actionsのデプロイ結果で公開URLを確認します。
+
+PRでは別途Cloudflare Previewが作成され、PR内のコメントに一時URLが掲載されます。PRを閉じるとPreviewは削除されます。公開設定が済んでいない段階では、GitHub Pagesにアクセスできるとは限りません。
 
 ## 開発とビルド
 
-Windowsで `./scripts/check-powershell-syntax.ps1` → `./scripts/check-repository.ps1` を実行してください。生成物は `dist/index.html`、`dist/index.self-extract.html`、`voice-cleaner.html`。依存パッケージは `dependencies.json` にバージョン固定し、`dependencies.lock.json` のSHA-256と照合します。生成ファイルは直接編集しません。
+```text
+.
+├─ assets/favicon.svg              # ヘッダー／favicon共通の正規SVG
+├─ src/index.template.html         # 編集するアプリ本体
+├─ app.config.json                 # アプリ名・バージョン・出力設定
+├─ dependencies.json               # 依存ライブラリと内包対象
+├─ dependencies.lock.json          # npm tarballのSHA-256ロック
+├─ build-standalone.bat            # Windows用のビルド入口
+├─ build-standalone.ps1            # 単一HTML生成
+├─ scripts/check-repository.ps1    # リポジトリ／生成物の検査
+├─ scripts/smoke-browser.cjs       # 実ブラウザでのGTCRN・WAV保存テスト
+├─ .github/workflows/             # ビルド・公開・PR Preview
+└─ dist/                           # 生成物（ビルド後）
+```
+
+リポジトリ全体の確認では、PowerShell構文検査を先に実行してから、リポジトリ検査を行います。
+
+```powershell
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-powershell-syntax.ps1
+pwsh -NoProfile -File .\scripts\check-repository.ps1
+```
+
+依存パッケージの更新は `scripts/update-dependency.ps1` で管理します。新しい依存はバージョンを固定し、`dependencies.lock.json` のSHA-256を更新・照合してからビルドします。自動更新の検出だけでは実際の依存バージョンを書き換えません。
+
+CIでは、単一HTMLおよび自己展開HTMLの生成、アイコンの一致、CSP、依存ロック、未置換プレースホルダーに加え、ブラウザでのGTCRN推論とWAV保存を検証します。
+
+## プライバシーと外部通信
+
+- **録音データはアップロードしません。** 読み込んだファイル・マイクの入力・処理後音声はブラウザ内で取り扱います。
+- **処理時に外部AI APIを呼び出しません。** 推論に必要なコード・モデルはHTML内にあります。
+- **`connect-src 'none'`** を含むContent Security Policyを設定し、アプリからの通常の外部ネットワーク接続を禁止しています。
+- Web版では最初のHTMLを配信するための通信が発生します。オフラインで使いたい場合は、生成済みHTMLをローカルで開いてください。
+
+## 制限事項
+
+- 主に**声の背景ノイズ低減**を対象とし、他人の声・音楽・強い反響・突発音を完全に消すものではありません。
+- **16 kHz・モノラル・16-bit PCM WAV**へ変換します。元のステレオ音場・サンプリングレート・圧縮形式は保持しません。
+- 動画を入力できても、**映像付きファイルの書き戻しには非対応**です。保存は音声のみのWAVです。
+- MP3・M4A・MP4などの対応状況はブラウザのデコード機能によって異なります。
+- 1ファイルあたりの上限は**250 MB**、音声の長さは**60分まで**です。上限内でも端末の処理速度・空きメモリにより処理できない場合があります。
+- マイク録音には権限が必要です。`file://` では使用できないブラウザがあるため、必要ならHTTPSまたはlocalhostで利用してください。
+- リアルタイムのマイク音声処理、複数話者の分離、MP3/M4A形式での書き出しには対応していません。
+
+## 使用ライブラリ
+
+| ライブラリ・モデル | バージョン | ライセンス | 用途 |
+| --- | --- | --- | --- |
+| [@sapphi-red/gtcrn-wasm](https://github.com/sapphi-red/gtcrn-wasm) | 0.0.3 | MIT | GTCRNをWebAssemblyで実行 |
+| [GTCRN](https://github.com/Xiaobin-Rong/gtcrn) | 上記WASMに内包 | MIT | 声の背景ノイズ低減 |
+| [PFFFT](https://github.com/marton78/pffft) | 上記WASMに含まれる実装 | 個別の再配布条件 | 音声信号のFFT処理 |
+
+GTCRNの実行時にONNX Runtimeの追加ダウンロードは必要ありません。ライセンスの詳細は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照してください。
+
+## コントリビューション
+
+バグ報告・機能提案は [GitHub Issues](https://github.com/ttomohisa/htmlapps-voice-cleaner/issues) からお願いします。開発上の注意事項は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
 
 ## ライセンス
 
-本体MIT。GTCRN / gtcrn-wasm / PFFFTのライセンスは [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) に記載しています。
+Copyright © 2026 ttomohisa
+
+このアプリは [MIT License](LICENSE) で公開しています。内包する外部ライブラリにはそれぞれのライセンス条件が適用されます。
