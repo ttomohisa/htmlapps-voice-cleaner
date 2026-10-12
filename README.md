@@ -1,8 +1,8 @@
 # Voice Cleaner
 
-[![Standalone HTML build](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/build-standalone.yml/badge.svg)](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/build-standalone.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-%2316624F)](LICENSE)
-[![Single HTML](https://img.shields.io/badge/distribution-single%20HTML-%2316624F)](#single-html-and-offline-use)
+[![GitHub Pages](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Single HTML](https://img.shields.io/badge/distribution-single%20HTML-0ea5e9)](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
 
 [日本語版 README](README.ja.md)
 
@@ -10,13 +10,13 @@ Voice Cleaner **reduces background noise in recordings of spoken audio, entirely
 
 ## Demo
 
-### [Open Voice Cleaner (Cloudflare PR Preview)](https://r1412273626-pr-1-bk-previews.ttomohisa.workers.dev)
+### [Open Voice Cleaner on GitHub Pages](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
 
-No installation or registration is required. Cloudflare serves the initial HTML; the audio and video you load, microphone recordings, and processing results remain on your device.
+Once published on GitHub Pages, Voice Cleaner needs no installation or registration. Files, microphone recordings, and processing results stay in your browser and are not uploaded to a server.
 
-**Note:** This is a temporary preview for [PR #1](https://github.com/ttomohisa/htmlapps-voice-cleaner/pull/1). The preview is deleted when the PR is closed. See [Publishing with GitHub Pages](#publish-with-github-pages) for the repository's persistent deployment workflow.
+**Availability:** The link may not be accessible until GitHub Pages is enabled and a deployment from `main` completes. Check [GitHub Pages Actions](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml) for the deployment status.
 
-![Voice Cleaner with an audio file loaded](assets/screenshot-en.png)
+[![Voice Cleaner with an audio file loaded](assets/screenshot-en.png)](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
 
 [Mobile screenshot](assets/screenshot-mobile.png)
 
@@ -32,9 +32,9 @@ No installation or registration is required. Cloudflare serves the initial HTML;
 
 ## Quick start
 
-### Use the web preview
+### Use the web app
 
-Open the [Cloudflare PR Preview](https://r1412273626-pr-1-bk-previews.ttomohisa.workers.dev), then choose an audio or video file. No account or installation is needed.
+When the [GitHub Pages version of Voice Cleaner](https://ttomohisa.github.io/htmlapps-voice-cleaner/) is available, open it and select an audio or video file. No account or installation is needed. Until it is published, you can use the standalone HTML file described below.
 
 ### Use a standalone HTML file
 
@@ -96,7 +96,7 @@ This repository includes a workflow that builds, verifies, and deploys the app o
 2. Push to `main` or manually trigger [Deploy standalone app to GitHub Pages](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml).
 3. Find the published URL in the GitHub Actions deployment output.
 
-Pull requests use a separate Cloudflare Preview. Its temporary URL is posted as a PR comment and deleted when the PR closes. The GitHub Pages URL should not be considered active until deployment is configured and succeeds.
+The planned URL is [https://ttomohisa.github.io/htmlapps-voice-cleaner/](https://ttomohisa.github.io/htmlapps-voice-cleaner/). Changes in a pull request do not appear on GitHub Pages until they are merged into `main`. The URL may remain unavailable until Pages is enabled and a deployment succeeds.
 
 ## Development and build layout
 
@@ -131,7 +131,7 @@ CI validates both standalone HTML formats, matching brand/favicon images, CSP, d
 - **Recordings are not uploaded.** Selected files, microphone data, and cleaned audio stay in the browser.
 - **No external AI API is called.** The model and runtime are embedded in the distributed HTML.
 - **CSP includes `connect-src 'none'`.** The app blocks ordinary runtime connections to outside servers.
-- The hosted preview still requires a request to download its initial HTML. For disconnected use, open a generated standalone HTML file locally.
+- The hosted GitHub Pages version requires an initial request to download the HTML. For disconnected use, open a generated standalone HTML file locally.
 
 ## Limitations
 

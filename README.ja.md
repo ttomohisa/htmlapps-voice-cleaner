@@ -1,8 +1,8 @@
 # Voice Cleaner / 音声ノイズ軽減
 
-[![Standalone HTML build](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/build-standalone.yml/badge.svg)](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/build-standalone.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-%2316624F)](LICENSE)
-[![Single HTML](https://img.shields.io/badge/distribution-single%20HTML-%2316624F)](#単一htmlとオフライン利用)
+[![GitHub Pages](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Single HTML](https://img.shields.io/badge/distribution-single%20HTML-0ea5e9)](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
 
 [English README](README.md)
 
@@ -10,13 +10,13 @@ Voice Cleanerは、**録音された声の背景ノイズをブラウザ内で�
 
 ## デモ
 
-### [Voice Cleanerを開く（Cloudflare PR Preview）](https://r1412273626-pr-1-bk-previews.ttomohisa.workers.dev)
+### [GitHub PagesでVoice Cleanerを開く](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
 
-登録・インストールは不要です。最初のHTMLはCloudflareから配信されますが、読み込んだ音声・動画、マイク録音、処理結果は端末内だけで扱われます。
+GitHub Pagesで公開されたHTMLを開けば、登録・インストールなしで利用できます。音声・動画ファイル、マイク録音、処理結果は端末内だけで扱われ、サーバーへアップロードしません。
 
-**注:** 上のURLは[PR #1](https://github.com/ttomohisa/htmlapps-voice-cleaner/pull/1)用の一時的なレビュー環境です。PRを閉じるとPreviewは削除されます。GitHub Pagesなどの恒久公開については[公開方法](#github-pagesで公開する)を参照してください。
+**公開状況:** GitHub Pagesが未設定、または `main` へのデプロイが完了していない場合、上のURLはまだ開けません。公開状況は[GitHub PagesのActions](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml)で確認できます。
 
-![音声を読み込んだVoice Cleanerの画面](assets/screenshot.png)
+[![音声を読み込んだVoice Cleanerの画面](assets/screenshot.png)](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
 
 [スマートフォン画面のスクリーンショット](assets/screenshot-mobile.png)
 
@@ -32,9 +32,9 @@ Voice Cleanerは、**録音された声の背景ノイズをブラウザ内で�
 
 ## すぐに使う
 
-### Webで試す
+### Webで使う
 
-上の[Cloudflare PR Preview](https://r1412273626-pr-1-bk-previews.ttomohisa.workers.dev)を開き、音声・動画を選択してください。インストールやユーザー登録は不要です。
+[GitHub Pages版Voice Cleaner](https://ttomohisa.github.io/htmlapps-voice-cleaner/)が公開されていれば、そのまま開いて音声・動画を選択できます。インストールやユーザー登録は不要です。まだ公開されていない場合は、以下の単一HTML版を利用できます。
 
 ### 単一HTMLを使う
 
@@ -98,7 +98,7 @@ Voice Cleanerは、**録音された声の背景ノイズをブラウザ内で�
 2. `main` に変更を反映するか、[Deploy standalone app to GitHub Pages](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml) を手動実行します。
 3. GitHub Actionsのデプロイ結果で公開URLを確認します。
 
-PRでは別途Cloudflare Previewが作成され、PR内のコメントに一時URLが掲載されます。PRを閉じるとPreviewは削除されます。公開設定が済んでいない段階では、GitHub Pagesにアクセスできるとは限りません。
+公開先は[https://ttomohisa.github.io/htmlapps-voice-cleaner/](https://ttomohisa.github.io/htmlapps-voice-cleaner/)を想定しています。PR内の変更は `main` へマージされるまでGitHub Pagesには反映されません。公開設定とデプロイが完了するまでは、上記URLが利用できない場合があります。
 
 ## 開発とビルド
 
