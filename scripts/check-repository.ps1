@@ -114,6 +114,10 @@ foreach ($requiredDependencyId in @("qrcode-generator", "jsqr")) {
 }
 
 $sourceText = Get-Content -Raw -Encoding UTF8 (Join-Path $Root "src\index.template.html")
+# A stray character after the favicon link is rendered above the app header.
+if ($sourceText -notmatch '(?m)^[ \t]*<link rel="icon" href="__APP_ICON_DATA_URI__">[ \t]*\r?$') {
+  throw "src\index.template.html favicon link must be the only content on its line."
+}
 if (-not $sourceText.Contains("__EMBEDDED_ASSET_BUNDLE_JSON__")) { throw "src\index.template.html must embed the asset bundle JSON directly." }
 if ($sourceText.Contains("__EMBEDDED_ASSET_BUNDLE_BASE64__")) { throw "Legacy double-Base64 asset bundle placeholder must not return." }
 $iconPlaceholderCount = ([regex]::Matches($sourceText, [regex]::Escape("__APP_ICON_DATA_URI__"))).Count

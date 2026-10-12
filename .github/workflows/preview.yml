@@ -43,6 +43,12 @@ jobs:
         shell: pwsh
         run: ./scripts/check-repository.ps1
 
+      - name: Browser audio-processing smoke test
+        shell: pwsh
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts --prefix .browser-smoke playwright-core@1.55.0
+          node ./scripts/smoke-browser.cjs
+
       - name: Check Cloudflare preview credentials
         id: cloudflare
         shell: pwsh

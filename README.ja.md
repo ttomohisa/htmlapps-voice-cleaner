@@ -1,283 +1,166 @@
-# Single HTML App Template
+# Voice Cleaner / 音声ノイズ軽減
 
-[![GitHub Pages](https://github.com/ttomohisa/htmlapps-template/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/ttomohisa/htmlapps-template/actions/workflows/deploy-pages.yml)
+[![GitHub Pages](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Single HTML](https://img.shields.io/badge/distribution-single%20HTML-0ea5e9)](https://ttomohisa.github.io/htmlapps-template/)
+[![Single HTML](https://img.shields.io/badge/distribution-single%20HTML-0ea5e9)](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
 
 [English README](README.md)
 
-**配布物が1つのHTMLだけで完結する、プライバシーに配慮したブラウザーアプリ**を作るためのGitHubリポジトリテンプレートです。
+Voice Cleanerは、**録音された声の背景ノイズをブラウザ内で軽減**するツールです。音声・動画から取り出した音声やマイク録音を処理し、元の音声と聞き比べてWAVで保存できます。ファイルをサーバーへアップロードする必要はありません。
 
-[PDF Organizer](https://github.com/ttomohisa/html-pdf-organizer) で採用している「読みやすい開発用ソースから、固定バージョンのライブラリ、Worker、WASM、フォント、補助素材などをビルド時に内包し、生成物を検証してGitHub Pagesへ公開する」構成を、さまざまな単一HTMLアプリで再利用できる形に整理しています。
+## デモ
 
-## 🚀 デモ
+### [GitHub PagesでVoice Cleanerを開く](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
 
-### [GitHub Pagesでスターターを開く](https://ttomohisa.github.io/htmlapps-template/)
+GitHub Pagesで公開されたHTMLを開けば、登録・インストールなしで利用できます。音声・動画ファイル、マイク録音、処理結果は端末内だけで扱われ、サーバーへアップロードしません。
 
-GitHub Pagesから最初のHTMLを取得した後は、アプリ内の処理をブラウザー内で完結させられる構成です。初期設定ではContent Security Policyにより実行時のネットワーク接続を遮断します。
+**公開状況:** GitHub Pagesが未設定、または `main` へのデプロイが完了していない場合、上のURLはまだ開けません。公開状況は[GitHub PagesのActions](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml)で確認できます。
 
-[![Single HTML App Templateの画面](assets/screenshot.png)](https://ttomohisa.github.io/htmlapps-template/)
+[![音声を読み込んだVoice Cleanerの画面](assets/screenshot.png)](https://ttomohisa.github.io/htmlapps-voice-cleaner/)
+
+[スマートフォン画面のスクリーンショット](assets/screenshot-mobile.png)
 
 ## 主な機能
 
-- ブラウザーアプリ全体を `dist/index.html` 1ファイルへビルドし、リポジトリ名先頭の `htmlapps-` を外した名前（例: `htmlapps-tap-counter` → `tap-counter.html`）でもリポジトリ直下へ自動コピー
-- gzip自己解凍版 `dist/index.self-extract.html` も任意で生成
-- Windowsでは `build-standalone.bat` をダブルクリックしてビルド可能
-- 標準のビルド手順ではPythonやNode.jsが不要
-- npmパッケージのバージョンを固定し、指定したファイルだけを内包
-- `dependencies.lock.json` でpackage tarballのSHA-256も固定
-- 週1回新版を確認し、自動更新やPR作成はせずGitHub Issueで通知
-- 大容量assetは必要に応じて `gzip` / `auto` 圧縮で内包
-- 取得したpackage tarballと内包ファイルのSHA-256を記録
-- `connect-src 'none'` により実行時のネットワーク接続を遮断
-- 実行時CDN、外部フォント、分析タグ、テレメトリを初期状態では使用しない
-- ビルド前にWindows PowerShellの構文・文字コードを検査し、引用符ミスやBOMなし非ASCIIスクリプトを早期検出
-- GitHub Actionsでビルド検証とGitHub Pages公開
-- Cloudflare用Secretが設定されたリポジトリでは、PRごとにWorkers Previewを自動作成し、疎通確認後に固定Preview URLをPRへコメント
-- `assets/favicon.svg` をfaviconと左上ブランドアイコンの共通ソースとして使用
-- 日英UI、レスポンシブ表示、キーボード操作、ライトモード固定のスターター
-- 確認ダイアログ、Undo Toast、ポップオーバーメニュー、数値設定、非同期状態ガード、ページ切替対応のスマホ固定ボトムバーを再利用可能
-- 製品仕様を `APP_SPEC.md`、コーディングLLM向け実装ルールを `AGENTS.md` に分離
-- ファイル出力アプリでは、保存前に出力ファイル名を編集できることを共通UXルール化
-- `build-size-report.json` で、UXを自動的に削らず容量増加を把握
+- **背景ノイズを軽減** — GTCRNをWebAssemblyで実行し、エアコン・ファン・サー音などが混じった会話・録音の聞き取りやすさを改善します。効果は録音内容によって異なります。
+- **音声・動画を読み込む** — WAV、MP3、M4A、AAC、OGG、WebM、MP4などを選択またはドラッグ＆ドロップできます。実際の読み込み可否はブラウザのデコーダーに依存します。
+- **マイクから録音** — ブラウザの権限を許可すると、その場で録音してノイズを軽減できます。リアルタイム通話の音声を加工する機能ではありません。
+- **10秒だけ試せる** — 波形上で開始位置を選び、全体を処理する前に短い範囲で効果を確認できます。
+- **Before / Afterを比較** — 元の音声と処理後を同じ再生位置で切り替えられます。波形上のシークバーはクリック・タップ・ドラッグに対応し、処理前後の再生位置が連動します。
+- **WAVで保存** — 全体処理後に保存名を変更して、16 kHz・モノラル・16-bit PCM WAVとして書き出します。
+- **端末内で完結** — AIモデルと実行コードを単一HTMLに内包。日本語／英語UI、PC／スマートフォンに対応します。
 
-## クイックスタート
+## すぐに使う
 
-### このテンプレートから新しいアプリを作る
+### Webで使う
 
-1. GitHubでこのリポジトリを開きます。
-2. **Use this template** から新しいリポジトリを作成します。
-3. `APP_SPEC.md` を作りたいアプリの仕様へ書き換えます。
-4. `app.config.json` のアプリ名、slug、バージョン、説明、リポジトリ情報を変更します。
-5. コーディングLLMには、実装前に `AGENTS.md` を読むよう指示します。
-6. `src/index.template.html` を編集し、必要に応じて `components/` の共通部品を利用します。
-7. Windowsで `build-standalone.bat` を実行します。最初にリポジトリ内の `.ps1` を構文解析し、Windows PowerShell 5.1で問題になるBOMなし非ASCIIソースも検出してからビルドします。
-8. `dist/` に生成されたHTMLを直接開き、必要に応じてネットワークを切った状態でも主要機能を確認します。
+[GitHub Pages版Voice Cleaner](https://ttomohisa.github.io/htmlapps-voice-cleaner/)が公開されていれば、そのまま開いて音声・動画を選択できます。インストールやユーザー登録は不要です。まだ公開されていない場合は、以下の単一HTML版を利用できます。
 
-そのまま利用できる依頼文と推奨手順は [LLMでアプリを作る手順](docs/LLM_WORKFLOW.ja.md) にあります。
+### 単一HTMLを使う
 
-### ローカルでビルドする
+ビルド済みファイルを入手した場合は、`voice-cleaner.html` または `dist/index.html` をブラウザで開きます。単一HTMLには処理に必要なJavaScript・WebAssembly・モデルが内包されています。オフラインでもファイルの読み込みと処理ができます。
 
-Windows 10/11で `build-standalone.bat` をダブルクリックするか、次を実行します。
+このリポジトリの[Actions](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/build-standalone.yml)で成功したビルドの成果物にも配布用HTMLが含まれます（ダウンロードにはGitHubへのサインインが必要な場合があります）。ソースの `src/index.template.html` をそのまま開くのではなく、生成済みHTMLを使用してください。
 
-```bat
-build-standalone.bat
-```
+### 自分でビルドする（Windows）
 
-生成物：
+1. このリポジトリをクローンまたはZIPでダウンロードします。
+2. `build-standalone.bat` を実行します。
+3. 初回は、`dependencies.json` でバージョン固定された依存パッケージを取得します。
+4. 生成された `voice-cleaner.html` または `dist/index.html` を任意の場所へコピーします。
+5. その後は、配布用HTMLをインターネット接続なしで開けます。
 
-```text
-dist/
-├─ index.html
-├─ index.self-extract.html
-├─ dependency-manifest.json
-├─ build-size-report.json
-├─ self-extract-manifest.json
-└─ .nojekyll
-```
-
-`dist/index.html` と `dist/index.self-extract.html` は生成物です。直接編集せず、`src/index.template.html` を変更して再ビルドしてください。
+通常のHTML生成にPythonやNode.jsは必要ありません。Windows PowerShellと `tar.exe` を利用します。マイク録音だけは、ブラウザによって `file://` で利用できない場合があります。
 
 ## 使い方
 
-基本的な開発の流れは次のとおりです。
+1. **音声を選ぶ** — 音声・動画ファイルをドラッグ＆ドロップするか、「ファイルを選択」から読み込みます。対応ブラウザならマイクでの録音も選べます。
+2. **位置を決める** — 波形をクリック・タップ・ドラッグして再生位置を移動します。通常の音声プレイヤーからも移動できます。
+3. **10秒試す** — 「現在位置から10秒試す」を押し、処理前後を聞き比べます。
+4. **全体を処理する** — 効果を確認できたら「ファイル全体をきれいにする」を押します。処理中は進捗が表示され、キャンセルできます。
+5. **聞き比べて保存** — 「元の音声」「処理後」を切り替えます。2本の結果波形は同じ再生位置へ連動します。ファイル名を編集し、「WAVで保存」を押します。
 
-1. `APP_SPEC.md` にアプリの目的、挙動、受入条件を定義します。
-2. `app.config.json` でアプリ情報を変更します。
-3. 外部ライブラリが必要な場合だけ、`dependencies.json` に固定バージョンで追加し、`dependencies.lock.json` を同期します。
-4. `src/index.template.html` にアプリを実装します。
-5. 共通操作は `components/` のUIパターンを再利用し、アプリごとに挙動がばらつかないようにします。
-6. `build-standalone.bat` を実行します。
-7. `dist/index.html` を直接開き、主要フロー、スマホ表示、キーボード操作、保存ファイル名などを確認します。
-8. 自己解凍版を有効にしている場合は `dist/index.self-extract.html` も確認します。
-9. WASMや大容量ライブラリを追加した場合は、公開前に `dist/build-size-report.json` も確認します。
+10秒プレビューは試聴用です。**WAV保存はファイル全体の処理後**に利用できます。ノイズ低減の強度調整はなく、GTCRNによる一定の処理を行います。
 
-### 主なファイル
+### 波形の操作
 
-| ファイル | 役割 |
+| 操作 | 動作 |
 | --- | --- |
-| `AGENTS.md` | コーディングLLMが最初に読む実装契約 |
-| `APP_SPEC.md` | アプリの挙動と受入条件 |
-| `app.config.json` | アプリ名、slug、バージョン、説明、ビルド設定 |
-| `dependencies.json` | 内包するnpmパッケージ、ファイル、更新チェック方針 |
-| `dependencies.lock.json` | 次回以降のビルドでも検証するtarball SHA-256 lock |
-| `src/index.template.html` | 編集するアプリ本体 |
-| `components/` | 再利用UI / 接続パターン（多くは依存なし） |
-| `build-standalone.bat` | Windows向けビルド入口 |
-| `build-standalone.ps1` | 単一HTMLビルダー |
-| `docs/LLM_WORKFLOW.ja.md` | コーディングLLMへ依頼する推奨手順 |
+| 波形をクリック／タップ | その位置へシーク |
+| 波形上をドラッグ | 再生位置を移動 |
+| フォーカス中に `←` / `→` | シーク位置を微調整 |
+| フォーカス中に `Home` / `End` | 先頭／末尾へ移動 |
+| Before / Afterの波形を操作 | 両方の再生位置を同期 |
 
-## Pull RequestをCloudflare Workersでプレビューする
+スマートフォンでは下部の「音声」「ノイズ軽減」「保存」から主要操作へアクセスできます。保存ボタンは、全体の処理結果ができるまで無効です。
 
-このテンプレートには、マージ前に生成済みアプリをPCや実際のスマートフォンから確認するための、任意のPR Preview workflowが含まれています。
+## 単一HTMLとオフライン利用
 
-**Settings → Secrets and variables → Actions** で、次のRepository Secretを設定します。
+ビルド時に、固定された `@sapphi-red/gtcrn-wasm` のJavaScript・WASM（GTCRNのモデルを内包）をHTMLへ埋め込みます。ブラウザ内でのGTCRN推論はWeb Workerで実行します。
 
-- `CLOUDFLARE_API_TOKEN` — Workers Scriptsを編集できるCloudflare API Token
-- `CLOUDFLARE_ACCOUNT_ID` — Preview Workerを置くCloudflare Account ID
+生成される主なファイルは次のとおりです。
 
-両方のSecretが利用できる場合、`.github/workflows/preview.yml` はPRの作成・更新・再オープン時に通常のPowerShell事前検査とRepository Checkを実行して `dist` を生成し、固定したWrangler `4.135.0` で共有Worker `bk-previews` へPreviewを作成します。PreviewはGitHubのrepository IDとPR番号から一意に識別し、URLの疎通確認後にPRコメントへ固定URLを投稿・更新します。PRを閉じたときは、別workflowの `.github/workflows/preview-cleanup.yml` がPreviewを削除します。
+| ファイル | 用途 |
+| --- | --- |
+| `voice-cleaner.html` | リポジトリ直下に生成される読みやすい単一HTML |
+| `dist/index.html` | 配布用の単一HTML（直下のHTMLと同一内容） |
+| `dist/index.self-extract.html` | gzip圧縮したHTMLを開くときに展開する小型の単一HTML |
+| `dist/dependency-manifest.json` | ビルドで内包した依存資産の情報 |
+| `dist/build-size-report.json` | 生成物サイズのレポート |
 
-CloudflareのSecretをfork由来のPRへ渡さないよう、Preview deploymentは同一repository内のbranchから作成されたPRだけを対象にします。このテンプレートから新しいrepositoryを作成してもGitHub ActionsのSecretは引き継がれないため、PR Previewを使う各repositoryで2つのSecretを設定してください。Secretがないrepositoryではビルド検証は通常どおり実行し、Preview deploymentだけをnotice付きでスキップします。
-
-`wrangler.preview.jsonc` はPR Preview専用設定です。本番公開は、個別アプリで明示的に変更しない限り従来どおりGitHub Pagesを使用します。
+自己展開版には `DecompressionStream` に対応するブラウザが必要です。マイク権限などのブラウザ制約は、単一HTMLでも適用されます。
 
 ## GitHub Pagesで公開する
 
-このリポジトリには、生成したHTMLをビルドして `dist` をGitHub Pagesへ公開するworkflowが含まれています。
+リポジトリには、`main` へのプッシュ時にビルド・検証し、GitHub Pagesが有効ならデプロイするワークフローがあります。
 
-1. このテンプレートからリポジトリを作成してGitHubへpushします。
-2. **Settings → Pages → Build and deployment → Source** で **GitHub Actions** を選択します。
-3. `main` へpushするか、Actions画面からデプロイworkflowを手動実行します。
-4. 成功すると、そのリポジトリのGitHub Pages URLから生成済みアプリを開けます。
+1. リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** に設定します。
+2. `main` に変更を反映するか、[Deploy standalone app to GitHub Pages](https://github.com/ttomohisa/htmlapps-voice-cleaner/actions/workflows/deploy-pages.yml) を手動実行します。
+3. GitHub Actionsのデプロイ結果で公開URLを確認します。
 
-`.github/workflows/deploy-pages.yml` はWindows runnerでビルドし、生成物を検証したうえで、Pagesが有効な場合に `dist` を公開します。Pagesが未設定の場合はデプロイだけをスキップし、生成したHTMLはActions artifactとして残します。
+公開先は[https://ttomohisa.github.io/htmlapps-voice-cleaner/](https://ttomohisa.github.io/htmlapps-voice-cleaner/)を想定しています。PR内の変更は `main` へマージされるまでGitHub Pagesには反映されません。公開設定とデプロイが完了するまでは、上記URLが利用できない場合があります。
 
-## 開発・ビルド構成
+## 開発とビルド
 
 ```text
 .
-├─ AGENTS.md
-├─ APP_SPEC.md
-├─ app.config.json
-├─ dependencies.json
-├─ dependencies.lock.json
-├─ components/
-│  ├─ async-state.html
-│  ├─ confirm-dialog.html
-│  ├─ mobile-bottom-bar.html
-│  ├─ popover-menu.html
-│  ├─ setting-field.html
-│  ├─ toast.html
-│  └─ webrtc-qr-pairing.html
-├─ src/
-│  └─ index.template.html
-├─ scripts/
-│  ├─ build-self-extract.ps1
-│  ├─ check-dependency-updates.ps1
-│  ├─ check-powershell-syntax.ps1
-│  ├─ check-repository.ps1
-│  ├─ dependency-tools.ps1
-│  ├─ sync-dependency-lock.ps1
-│  ├─ update-dependency.ps1
-│  ├─ verify-self-extract.ps1
-│  └─ verify-standalone.ps1
-├─ docs/
-├─ examples/
-├─ dist/
-├─ build-standalone.bat
-├─ build-standalone.ps1
-└─ .github/workflows/
+├─ assets/favicon.svg              # ヘッダー／favicon共通の正規SVG
+├─ src/index.template.html         # 編集するアプリ本体
+├─ app.config.json                 # アプリ名・バージョン・出力設定
+├─ dependencies.json               # 依存ライブラリと内包対象
+├─ dependencies.lock.json          # npm tarballのSHA-256ロック
+├─ build-standalone.bat            # Windows用のビルド入口
+├─ build-standalone.ps1            # 単一HTML生成
+├─ scripts/check-repository.ps1    # リポジトリ／生成物の検査
+├─ scripts/smoke-browser.cjs       # 実ブラウザでのGTCRN・WAV保存テスト
+├─ .github/workflows/             # ビルド・公開・PR Preview
+└─ dist/                           # 生成物（ビルド後）
 ```
 
-### 依存ライブラリを追加・更新する
-
-`dependencies.json` に固定バージョンと必要ファイルを記載したら、対応するlockを生成します。
+リポジトリ全体の確認では、PowerShell構文検査を先に実行してから、リポジトリ検査を行います。
 
 ```powershell
-.\scripts\sync-dependency-lock.ps1 -Id dayjs
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File .\scripts\check-powershell-syntax.ps1
+pwsh -NoProfile -File .\scripts\check-repository.ps1
 ```
 
-`dependencies.lock.json` にはpackage tarballの期待SHA-256を保存します。通常ビルドは、取得済み/新規取得したtarballがlockと一致しなければ停止します。スターター初期状態には依存がないためlockは空です。
+依存パッケージの更新は `scripts/update-dependency.ps1` で管理します。新しい依存はバージョンを固定し、`dependencies.lock.json` のSHA-256を更新・照合してからビルドします。自動更新の検出だけでは実際の依存バージョンを書き換えません。
 
-依存ごとに `patch` / `minor` / `major` / `manual` の更新チェック方針も設定できます。週1回の `.github/workflows/dependency-updates.yml` はnpmを確認し、対象更新があれば管理Issueを作成・更新します。**バージョン変更やPR作成は自動では行いません。**
+CIでは、単一HTMLおよび自己展開HTMLの生成、アイコンの一致、CSP、依存ロック、未置換プレースホルダーに加え、ブラウザでのGTCRN推論とWAV保存を検証します。
 
-ローカルで確認：
+## プライバシーと外部通信
 
-```powershell
-.\scripts\check-dependency-updates.ps1
-```
-
-内容を確認して推奨版へ更新：
-
-```powershell
-.\scripts\update-dependency.ps1 -Id dayjs
-```
-
-設定例は `examples/dependencies.dayjs.json`、WebRTC QR接続用は `examples/dependencies.webrtc-qr.json`、詳しい運用は [内包依存ライブラリの更新・固定](docs/DEPENDENCIES.ja.md) を参照してください。
-
-パッケージキャッシュを破棄して固定バージョンを再取得する場合：
-
-```bat
-build-standalone.bat -ForceDownload
-```
-
-ビルド処理では次のことを行えます。
-
-- npm公式レジストリから固定バージョンのpackage tarballを取得
-- `dependencies.lock.json` のSHA-256と照合
-- 宣言したファイルだけをHTMLへ内包
-- 選択した大容量assetを `gzip` / `auto` 圧縮で内包
-- package tarballと内包ファイルのSHA-256を記録
-- 未置換のビルドプレースホルダーや禁止された外部ランタイム参照を検出
-- `dist/dependency-manifest.json` を生成
-- `dist/build-size-report.json` を生成
-- 設定したサイズ予算を超えた場合は警告し、容量だけを理由に自動でUXを削る設計にはしない
-
-必須のPowerShellスクリプトは `Get-FileHash` と `::new()` に依存せず、制約のあるWindows PowerShell環境でも動きやすい構成です。
-
-### 自己解凍HTML
-
-通常のビルドでは次の2種類を生成できます。
-
-- `dist/index.html`：可読性、デバッグ、SEO、GitHub Pagesの既定ページに向く通常版
-- `dist/index.self-extract.html`：元HTMLをgzip圧縮し、ブラウザーの `DecompressionStream` で復元する配布向け版
-
-自己解凍版も1ファイルで完結し、外部ライブラリなしでオフライン利用できます。ただしJavaScriptと `DecompressionStream` 対応ブラウザーが必要です。GitHub Pagesでは通常版を使い、自己解凍版は容量を抑えたい配布向けの副成果物として扱う想定です。
-
-自己解凍版を生成しない場合：
-
-```powershell
-.\build-standalone.ps1 -SkipSelfExtract
-```
-
-## 再利用UIコンポーネント
-
-`components/` には、すべてのアプリを同じレイアウトに縛ることなく、共通操作を揃えるための再利用パターンを用意しています。多くは依存なしですが、WebRTC接続部品は必要なQRライブラリをAsset Pipelineで固定バージョン内包します。
-
-- `confirm-dialog.html`：上書きや完全削除など、取り返しのつかない・高リスク操作
-- `toast.html`：軽量な状態通知と、戻せる操作のUndo
-- `popover-menu.html`：外側クリックと `Esc` に対応した「絞り込み / 管理 / その他」メニュー
-- `setting-field.html`：プリセット＋自由入力の数値設定
-- `async-state.html`：入力元変更後に古い非同期結果を表示しないための状態ガード
-- `mobile-bottom-bar.html`：Safe Area、ページ切替、セクション移動、主要操作、実際の無効状態に対応したスマホ固定ボトムナビ
-- `webrtc-qr-pairing.html`：QR/カメラ手動シグナリング、ICE診断、完全収集待ち、再試行クリーンアップまで含む完全サーバーレスWebRTC接続UI。`examples/dependencies.webrtc-qr.json` を使用
-
-詳しくは [再利用UIコンポーネント](docs/COMPONENTS.ja.md) を参照してください。接続部品の詳細は [WebRTC QRペアリング](docs/WEBRTC_QR_PAIRING.ja.md) にまとめています。
-
-## プライバシーと実行時通信
-
-スターターのContent Security Policyでは `connect-src 'none'` を指定し、通常の実行時ネットワーク接続を遮断します。必要なアプリ資産を生成HTMLへ内包し、ユーザーの処理をブラウザー内で完結させることを基本方針としています。任意のWebRTC DataChannelアプリは、CDN/APIを追加せず完全サーバーレスQR接続部品を利用できますが、接続相手ブラウザーへデータを直接送る点はプライバシー説明で明記してください。
-
-GitHub Pages版では最初のHTML取得に通信が必要です。完全にネットワークを切って利用する場合は、生成された `dist/index.html` または `dist/index.self-extract.html` をローカルで開いてください。
-
-静的検査はプライバシーや安全性を完全に証明するものではありません。公開前にはブラウザーのネットワーク通信も確認し、追加した第三者コードの内容とライセンスも確認してください。
+- **録音データはアップロードしません。** 読み込んだファイル・マイクの入力・処理後音声はブラウザ内で取り扱います。
+- **処理時に外部AI APIを呼び出しません。** 推論に必要なコード・モデルはHTML内にあります。
+- **`connect-src 'none'`** を含むContent Security Policyを設定し、アプリからの通常の外部ネットワーク接続を禁止しています。
+- Web版では最初のHTMLを配信するための通信が発生します。オフラインで使いたい場合は、生成済みHTMLをローカルで開いてください。
 
 ## 制限事項
 
-- これは開発テンプレートであり、アプリ固有機能を提供するフレームワークではありません。個別仕様は `APP_SPEC.md` と `src/index.template.html` に実装します。
-- センサー、WebCodecs、WASM threads、File System API、`DecompressionStream` などはブラウザーによって対応状況が異なるため、各アプリ側で互換性対応が必要です。
-- WASM、モデル、フォント、メディア素材などを内包すると単一HTMLが大きくなる場合があります。使いやすさを安易に削らず、サイズレポートと圧縮機能を使って判断してください。
-- `connect-src 'none'` は完全ローカル処理のアプリ向けです。意図的にWeb APIを使うアプリではCSPを個別に見直す必要があります。
-- 静的検証だけでは、追加した第三者コードの安全性やプライバシーを保証できません。
-- 自己解凍版はJavaScriptと `DecompressionStream` が必要です。幅広い互換性が必要な場合は通常版HTMLを利用してください。
+- 主に**声の背景ノイズ低減**を対象とし、他人の声・音楽・強い反響・突発音を完全に消すものではありません。
+- **16 kHz・モノラル・16-bit PCM WAV**へ変換します。元のステレオ音場・サンプリングレート・圧縮形式は保持しません。
+- 動画を入力できても、**映像付きファイルの書き戻しには非対応**です。保存は音声のみのWAVです。
+- MP3・M4A・MP4などの対応状況はブラウザのデコード機能によって異なります。
+- 1ファイルあたりの上限は**250 MB**、音声の長さは**60分まで**です。上限内でも端末の処理速度・空きメモリにより処理できない場合があります。
+- マイク録音には権限が必要です。`file://` では使用できないブラウザがあるため、必要ならHTTPSまたはlocalhostで利用してください。
+- リアルタイムのマイク音声処理、複数話者の分離、MP3/M4A形式での書き出しには対応していません。
 
-## 依存ライブラリ
+## 使用ライブラリ
 
-スターターアプリは初期状態では第三者の実行時依存ライブラリを持ちません。
+| ライブラリ・モデル | バージョン | ライセンス | 用途 |
+| --- | --- | --- | --- |
+| [@sapphi-red/gtcrn-wasm](https://github.com/sapphi-red/gtcrn-wasm) | 0.0.3 | MIT | GTCRNをWebAssemblyで実行 |
+| [GTCRN](https://github.com/Xiaobin-Rong/gtcrn) | 上記WASMに内包 | MIT | 声の背景ノイズ低減 |
+| [PFFFT](https://github.com/marton78/pffft) | 上記WASMに含まれる実装 | 個別の再配布条件 | 音声信号のFFT処理 |
 
-各アプリで追加したライブラリは `dependencies.json` に固定バージョンで宣言し、`dependencies.lock.json` でtarballを固定します。ライセンス上必要なものはそのアプリの `THIRD_PARTY_NOTICES.md` にも反映してください。週次チェックはIssue通知だけで、更新自体は人が判断します。
+GTCRNの実行時にONNX Runtimeの追加ダウンロードは必要ありません。ライセンスの詳細は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) を参照してください。
 
-## Contributing
+## コントリビューション
 
-ビルドシステムの改善、バグ報告、再利用できるUIパターンの提案はGitHub Issuesで歓迎します。開発手順は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
+バグ報告・機能提案は [GitHub Issues](https://github.com/ttomohisa/htmlapps-voice-cleaner/issues) からお願いします。開発上の注意事項は [CONTRIBUTING.md](CONTRIBUTING.md) を参照してください。
 
 ## ライセンス
 
 Copyright © 2026 ttomohisa
 
-[MIT License](LICENSE) で公開しています。このテンプレートから作成したアプリでは、作者名と第三者ライセンス表記を適切に更新してください。
-
-## WebRTCテンプレート補足
-
-再利用QRペアリングコンポーネントでは、指定したDataChannelが `open` になって初めてアプリ接続済みとします。独自Channel構成ではreliableな制御Channelを `readyChannelLabel` に指定します。
+このアプリは [MIT License](LICENSE) で公開しています。内包する外部ライブラリにはそれぞれのライセンス条件が適用されます。
