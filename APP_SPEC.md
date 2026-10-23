@@ -1,5 +1,11 @@
 # Voice Cleaner — Application Specification
 
+## Phone footer and final Help metadata
+
+- Hide only the informational footer at the existing 600px phone breakpoint; preserve functional tabs/actions and header versions.
+- Move existing lower build disclosure intact to the final scrollable Help content. Keep metadata available on phone and desktop; preserve keyboard activation and existing modal scroll behavior.
+- Existing equivalent local-processing badges remain `Fully local processing`; privacy text, runtime, versions and dependencies stay unchanged.
+
 Version 1.0.0. Browser Kitty. Primary purpose: locally reduce background noise in spoken recordings with GTCRN WebAssembly, compare with original, then save WAV.
 
 ## Workflow and state

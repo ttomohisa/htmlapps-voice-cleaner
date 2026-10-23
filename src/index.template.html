@@ -539,7 +539,10 @@
       .app-toast { bottom: calc(var(--app-mobile-bottom-bar-height) + 12px + env(safe-area-inset-bottom)); }
     }
 
-  </style>
+    @media (max-width: 600px) { body > footer { display: none; } }
+    #helpDialog .help-build { margin-top:20px; padding-top:12px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+    #helpDialog .help-build .build-grid { grid-template-columns:minmax(0,1fr); }
+</style>
 </head>
 <body>
   <header class="app-header">
@@ -683,16 +686,7 @@
         </div>
       </section>
 
-      <section class="section">
-        <details>
-          <summary data-i18n="buildInfo">技術情報</summary>
-          <div class="build-grid">
-            <div class="build-item"><span data-i18n="modelLabel">モデル</span><strong>GTCRN</strong></div>
-            <div class="build-item"><span data-i18n="appVersion">アプリバージョン</span><strong id="buildVersion">—</strong></div>
-            <div class="build-item"><span data-i18n="dependencies">内包依存数</span><strong id="dependencyCount">0</strong></div>
-          </div>
-        </details>
-      </section>
+
     </div>
     <!-- APP:END -->
 
@@ -738,6 +732,14 @@
       <h3 data-i18n="helpModelTitle">使用モデル</h3><p data-i18n="helpModelBody">GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。</p>
       <p class="dialog-note" data-i18n="helpOffline">配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。</p>
       <!-- APP:HELP:END -->
+      <section class="help-build"><details>
+          <summary data-i18n="buildInfo">技術情報</summary>
+          <div class="build-grid">
+            <div class="build-item"><span data-i18n="modelLabel">モデル</span><strong>GTCRN</strong></div>
+            <div class="build-item"><span data-i18n="appVersion">アプリバージョン</span><strong id="buildVersion">—</strong></div>
+            <div class="build-item"><span data-i18n="dependencies">内包依存数</span><strong id="dependencyCount">0</strong></div>
+          </div>
+        </details></section>
     </div>
   </dialog>
 
@@ -1013,7 +1015,7 @@
       $('#recordButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
       $('#mobileSourceButton').addEventListener('click',()=>$('#sourceSection').scrollIntoView({behavior:'smooth',block:'start'})); $('#mobileProcessButton').addEventListener('click',()=>runDenoise('full')); $('#mobileSaveButton').addEventListener('click',saveResult);
       $('#languageButton').addEventListener('click',()=>{language=language==='ja'?'en':'ja';try{localStorage.setItem(`${APP_CONFIG.slug}:language`,language);}catch{}applyLanguage();});
-      const help=$('#helpDialog');$('#helpButton').addEventListener('click',()=>help.showModal());$('#closeHelpButton').addEventListener('click',()=>help.close());help.addEventListener('click',e=>{const r=help.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)help.close();});
+      const help=$('#helpDialog');$('#helpButton').addEventListener('click',()=>help.showModal());$('#closeHelpButton').addEventListener('click',()=>help.close());help.addEventListener('click',e=>{if(e.target!==e.currentTarget)return;const r=help.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)help.close();});
 
       $('#brandName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;$('#versionBadge').textContent=`v${APP_CONFIG.version}`;$('#footerName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;$('#buildVersion').textContent=APP_CONFIG.version;$('#dependencyCount').textContent=String(BUILD_MANIFEST.dependencies?.length||0);document.body.classList.add('has-mobile-bottom-bar'); setPhase('empty'); resetWaveSeeks(); applyLanguage();
       if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined') $('#recordButton').disabled=true;
