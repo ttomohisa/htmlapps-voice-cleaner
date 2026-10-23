@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased (PR #1)
+## Unreleased
+
+- Hide the phone informational footer and place existing build metadata at the end of Help, preserving functional controls and keyboard access.
+ (PR #1)
 
 - Added draggable, tappable, keyboard-accessible seek bars over source and comparison waveforms.
 - Waveform playheads track playback and both Before/After waveforms stay synchronized.
