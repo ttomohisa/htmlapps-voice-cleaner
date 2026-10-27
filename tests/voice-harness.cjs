@@ -1,0 +1,21 @@
+const fs = require('node:fs'), vm = require('node:vm');
+function deferred(){let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};}
+function harness(options={}){
+ const html=fs.readFileSync('src/index.template.html','utf8');const knownIds=new Set([...html.matchAll(/id="([^"]+)"/g)].map(m=>m[1]));
+ const elements=new Map(), downloads=[], toasts=[], workers=[];
+ function element(id){if(elements.has(id))return elements.get(id);const classes=new Set();const e={id,dataset:{},style:{},value:'',textContent:'',hidden:false,disabled:false,currentTime:0,paused:true,readyState:1,src:'',isConnected:true,open:false,
+ classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),toggle(x,on){on??=!classes.has(x);on?classes.add(x):classes.delete(x);},contains:x=>classes.has(x)},
+ setAttribute(k,v){this[k]=String(v);},removeAttribute(k){delete this[k];},addEventListener(name,fn){(this.events??={})[name]=fn;},pause(){this.paused=true;},load(){},scrollIntoView(){},focus(){},showModal(){this.open=true;},close(){this.open=false;},append(){},remove(){},click(){downloads.push({name:this.download,url:this.href});},getBoundingClientRect(){return {width:100,height:100,left:0,right:100,top:0,bottom:100};},querySelector:s=>element(id+s),getContext:()=>new Proxy({},{get:()=>()=>{}})};Object.defineProperty(e,'parentElement',{get:()=>element(id+'-stage')});elements.set(id,e);return e;}
+ const document={querySelector:s=>s.startsWith('#')&&!knownIds.has(s.slice(1))?null:s==='meta[name="description"]'&&!/<meta\s+name="description"/.test(html)?null:element(s),getElementById:id=>element('#'+id),querySelectorAll:()=>[],createElement:()=>element('anchor'+downloads.length),documentElement:element('html'),body:element('body'),activeElement:element('#replaceButton')};
+ const storage=new Map(Object.entries(options.storage||{}));const context={document,navigator:{language:'en',languages:['en']},localStorage:{getItem:k=>{if(options.storageThrows)throw Error('denied');return storage.get(k);},setItem:(k,v)=>{if(options.storageThrows)throw Error('denied');storage.set(k,v);}},location:{href:options.url??'https://example.test/?lang=en'},history:{replaceState(state,title,url){context.location.href=url;}},APP_CONFIG:{slug:'voice-cleaner',name:'Voice Cleaner',nameJa:'音声クリーナー'},BUILD_MANIFEST:{},StandaloneAssets:{has:()=>true},Blob,URL,Float32Array,Uint8Array,ArrayBuffer,DataView,Set,Map,HTMLElement:Object,console:{error(){}},setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){},requestAnimationFrame:()=>0,cancelAnimationFrame(){},matchMedia:()=>({matches:false}),getComputedStyle:()=>({height:'82',getPropertyValue:()=>''}),BrowserKittyUI:fs.existsSync('components/ui-conventions.js')?require('../components/ui-conventions.js'):null};
+ context.window=context;context.addEventListener=()=>{};context.AppToast={show:args=>toasts.push(args)};
+ context.Worker=class {constructor(){this.terminated=false;workers.push(this);}terminate(){this.terminated=true;}postMessage(data,transfer){this.post=structuredClone(data,{transfer});}emit(data){this.onmessage({data});}error(){this.onerror({message:'old failure'});}};
+ const start=html.indexOf('      const translations =');const end=html.lastIndexOf("      $('#brandName').textContent=");
+ if(start<0||end<0)throw Error('Application markers missing');
+ const code=html.slice(start,end)+`\n globalThis.app={state,runDenoise,stopProcessing,saveResult,loadSource,commitResult,setPhase,applyLanguage,pcmToWav,outputName,updateResultLabels, setRuntime:fn=>ensureRuntime=fn, setDecoder:fn=>decodeTo16k=fn, setLanguage:value=>language=value};`;
+ if(fs.existsSync('components/ui-conventions.js'))vm.runInNewContext(fs.readFileSync('components/ui-conventions.js','utf8'),context);
+ vm.runInNewContext(code,context);if(options.initialize)vm.runInNewContext(html.slice(end,html.lastIndexOf('    })();')),context);context.app.state.wasmBytes=new Uint8Array([1]);context.app.state.runtimeUrl='blob:runtime';
+ // The production toast writes the real status element; expose that in assertions.
+ return {...context.app,context,element,workers,downloads,storage,toasts,toast:()=>element('#appToastMessage').textContent};
+}
+module.exports={harness,deferred};

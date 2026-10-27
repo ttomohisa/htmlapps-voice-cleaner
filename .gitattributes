@@ -4,3 +4,6 @@
 *.png binary
 *.jpg binary
 *.zip binary
+
+# Preserve generated standalone bytes so the root artifact matches dist/index.html.
+voice-cleaner.html -text whitespace=cr-at-eol

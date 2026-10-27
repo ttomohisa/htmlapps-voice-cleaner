@@ -236,3 +236,9 @@ Useful mount options include `initialPage`, `pageTopTarget`, `pageTopOffset`, `o
 ## WebRTC application-ready rule
 
 For `webrtc-qr-pairing.html`, PeerConnection `connected` alone is not application-ready. The designated readiness DataChannel must also be `open`. Custom channel layouts set `readyChannelLabel` to a reliable control channel.
+
+## Shared UI conventions 1.0.0
+
+`components/ui-conventions.js` and `.css` are exact copies from htmlapps-template. The lock records their SHA-256 values; do not patch consumer copies independently. The builder dot-sources `scripts/embed-ui-conventions.ps1` and expands `__BK_UI_JS__` / `__BK_UI_CSS__` exactly once, failing on missing markers or changed bytes.
+
+The application owns audio state and uses `resolveLanguage` / `chooseLanguage`, `text`, `setButtonState` and session-mode `setSaveStatus`. CSS opt-in uses `data-bk-button`, `data-bk-variant` and `data-bk-header-action`. The existing AppConfirm snippet now supplies real replacement confirmation with Cancel-first focus, Escape/backdrop cancellation and focus restoration. Its labels are updated through the app dictionary. App-owned source generations, run epochs and worker identities reject obsolete audio events; the shared UI layer does not own processing or persistence.

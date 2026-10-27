@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Embed hash-pinned BrowserKittyUI 1.0.0 with tab-session retention, shared language preferences and native busy/disabled action states.
+- Clarify mobile Audio navigation, Process whole audio and Save WAV actions, current/previous output scope, editable filename snapshots and truthful download-started notices.
+- Preserve the last full WAV through previews, cancellation and processing errors; validate replacement audio before irreversible tab-state confirmation.
+- Fix canceled runtime startup and stale worker callbacks with application run ownership; preserve progress duration across PCM transfer and clean failed worker submissions.
+- Add application and shared UI regressions to repository checks. GTCRN 0.0.3, embedded runtime bytes, frame processing and WAV format remain unchanged.
+
+
 - Hide the phone informational footer and place existing build metadata at the end of Help, preserving functional controls and keyboard access.
  (PR #1)
 

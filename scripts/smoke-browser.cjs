@@ -116,15 +116,29 @@ const server = http.createServer((req, res) => {
     assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'Unexpected horizontal scroll on mobile');
     const waveform = await page.locator('#afterWaveCanvas').evaluate(el => !!el.width && !!el.height);
     assert.ok(waveform, 'Cleaned waveform missing');
+    await page.locator('#outputFilename').fill('reviewed-session.wav');
     const downloadStarted = page.waitForEvent('download', { timeout: 10000 });
     await page.locator('#mobileSaveButton').click(); // Mobile fixed save action remains usable while the seek bar is on screen.
     const download = await downloadStarted;
+    assert.equal(download.suggestedFilename(), 'reviewed-session.wav', 'Edited filename must be used');
     const wavData = fs.readFileSync(await download.path());
     assert.equal(wavData.toString('ascii', 0, 4), 'RIFF', 'WAV RIFF header missing');
     assert.equal(wavData.toString('ascii', 8, 12), 'WAVE', 'WAV format header missing');
     assert.equal(wavData.readUInt32LE(24), 16000, 'Incorrect WAV sample rate');
     assert.ok(wavData.length > 32000, 'Exported WAV contains too little audio');
-    assert.ok(logs.every(line => !line.startsWith('unexpected external request:')), 'Runtime requested external network');
+    assert.equal(wavData.readUInt16LE(22), 1, 'WAV must be mono');
+    assert.equal(wavData.readUInt16LE(34), 16, 'WAV must be 16-bit PCM');
+    await page.locator('#previewButton').click();
+    await page.waitForFunction(() => !document.querySelector('#previewButton').disabled, null, { timeout: 45000 });
+    assert.equal(await page.locator('#processError').textContent(), '', 'Preview failed');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(), 'Previous full WAV must survive a preview');
+    assert.match(await page.locator('#saveScope').textContent(), /Previous result|前回の結果/);
+    const previousDownload = page.waitForEvent('download', { timeout: 10000 });
+    await page.locator('#mobileSaveButton').click();
+    const previous = await previousDownload;
+    assert.equal(previous.suggestedFilename(), 'reviewed-session.wav');
+    assert.deepEqual(fs.readFileSync(await previous.path()), wavData, 'Preview must not replace the saved full WAV');
+    assert.equal(logs.length, 0, 'Unexpected console error or runtime network request: ' + logs.join('\n'));
     console.log('[PASS] 2-second speech/noise WAV -> GTCRN WASM -> playback result -> WAV download; no external network.');
   } catch (error) {
     console.error('[FAIL] Browser audio smoke test:', error.stack || error);

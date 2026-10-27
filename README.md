@@ -62,6 +62,12 @@ The normal HTML build does not require Python or Node.js. It uses Windows PowerS
 
 The 10-second preview is for listening. **WAV export becomes available after processing the whole recording.** GTCRN uses a fixed processing mode; there is no noise-reduction strength slider.
 
+Your audio, recordings and results stay only in the current tab and are not saved automatically. Save a full WAV result before closing the tab. Starting another run marks retained results as **Previous result**; stopping or a failed run preserves them. A later preview keeps the last full WAV available, and the save scope identifies it separately from the preview on screen. A download notice reports **Download started**, not a completed device write.
+
+Replacing audio decodes the new file before asking for confirmation. Cancel or decode failure keeps your current audio, results and filename. Confirming replaces the tab's audio and results irreversibly; original files and downloaded WAV files remain intact.
+
+The UI uses URL `?lang=ja/en`, a shared same-origin language preference, the legacy tool preference, then supported browser languages (English fallback). Explicit switching remembers only the shared language preference when storage permits; audio and processing are preserved. Language sharing is not guaranteed across different origins or standalone `file://` files.
+
 ### Waveform controls
 
 | Control | Action |
@@ -72,7 +78,7 @@ The 10-second preview is for listening. **WAV export becomes available after pro
 | `Home` / `End` while focused | Seek to the beginning / end |
 | Seek either Before / After waveform | Synchronize the two result positions |
 
-On mobile, the bottom navigation provides Audio, Clean, and Save actions. Save stays disabled until there is a complete processed result.
+On mobile, **Audio** moves to the source, **Process whole audio** runs processing, and **Save WAV** starts a download. These are navigation plus actions, not page tabs. Both save controls use the same editable filename and full result.
 
 ## Single HTML and offline use
 
@@ -162,3 +168,7 @@ Bug reports and feature suggestions are welcome in [GitHub Issues](https://githu
 Copyright © 2026 ttomohisa
 
 This application is licensed under the [MIT License](LICENSE). Embedded third-party components retain their own license conditions.
+
+### Shared UI development checks
+
+BrowserKittyUI 1.0.0 is vendored in `components/` and hash-checked by `scripts/embed-ui-conventions.ps1`; generated HTML embeds it locally. `scripts/check-repository.ps1` now also requires Node.js to run `node --test tests/*.test.cjs` before building. The standalone HTML builder itself still does not require Node.js. See `APP_SPEC.md` for remaining human audio, keyboard and mobile acceptance checks.

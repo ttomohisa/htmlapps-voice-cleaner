@@ -254,3 +254,9 @@ mobileBar.setEnabled('save', true);
 ## WebRTCの接続成立ルール
 
 `webrtc-qr-pairing.html` ではPeerConnectionの `connected` だけをアプリ接続済みとして扱いません。指定した準備完了DataChannelが `open` になって初めて `onConnected` を発火します。独自Channel構成ではreliableな制御Channelを `readyChannelLabel` に指定します。
+
+## 共通UI規約 1.0.0
+
+`components/ui-conventions.js` と `.css` はhtmlapps-templateからの同一コピーです。lockのSHA-256で検証し、利用側だけで変更しません。ビルダーは `scripts/embed-ui-conventions.ps1` により `__BK_UI_JS__` / `__BK_UI_CSS__` を1回ずつ展開し、不正なマーカーやハッシュは拒否します。
+
+アプリ側が音声状態を所有し、言語解決・明示的な言語選択・共通文言・ボタン状態・タブ保持表示のAPIを接続します。CSSは `data-bk-button`、`data-bk-variant`、`data-bk-header-action` で明示的に適用します。既存AppConfirmを音声置換に使い、キャンセル初期フォーカス、Esc・背景取消、フォーカス復帰を保持します。古い音声イベントはアプリ側のソース世代・実行世代・Worker同一性で拒否し、共通UI部品は音声処理や保存を所有しません。

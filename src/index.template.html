@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#f5f5f2">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: blob:; media-src 'self' data: blob:; worker-src 'self' blob:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="description" content="Local speech noise reduction and WAV export">
   <title>Voice Cleaner</title>
   <link rel="icon" href="__APP_ICON_DATA_URI__">
   <style>
@@ -482,7 +483,7 @@
     .action-tile:disabled { opacity: .42; cursor: default; }
     .action-title { display: block; font-size: 13px; font-weight: 800; }
     .action-caption { display: block; margin-top: 3px; color: var(--muted); font-size: 10px; font-weight: 560; line-height: 1.4; }
-    .action-tile.primary .action-caption { color: rgba(255,255,255,.8); }
+    .action-tile .action-caption { color: inherit; }
     .process-note { margin: 9px 0 0; color: var(--muted); font-size: 11px; }
     .progress-card { display: none; padding: 14px; border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line)); border-radius: 12px; background: var(--accent-soft); }
     .progress-card.is-visible { display: block; }
@@ -543,6 +544,7 @@
     #helpDialog .help-build { margin-top:20px; padding-top:12px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
     #helpDialog .help-build .build-grid { grid-template-columns:minmax(0,1fr); }
 </style>
+  <style>__BK_UI_CSS__</style>
 </head>
 <body>
   <header class="app-header">
@@ -555,8 +557,8 @@
         </div>
       </div>
       <div class="header-actions">
-        <button class="language-button" id="languageButton" type="button" aria-label="Switch language">EN</button>
-        <button class="icon-button header-icon-button" id="helpButton" type="button" data-i18n-title="helpTitle" data-i18n-aria-label="helpTitle" title="使い方と注意事項" aria-label="使い方と注意事項">
+        <button class="language-button" data-bk-header-action id="languageButton" type="button" aria-label="Switch language">EN</button>
+        <button class="icon-button header-icon-button" data-bk-header-action id="helpButton" type="button" data-i18n-title="helpTitle" data-i18n-aria-label="helpTitle" title="使い方と注意事項" aria-label="使い方と注意事項">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.35 2.35 0 1 1 3.72 1.9c-.92.67-1.52 1.12-1.52 2.1"/><path d="M12 17h.01"/></svg>
         </button>
       </div>
@@ -576,6 +578,8 @@
     </section>
 
     <!-- APP:BEGIN Voice Cleaner application. -->
+    <p id="retentionStatus" data-bk-save-status="dirty"></p>
+    <p class="tiny-note" data-i18n="retentionAudio"></p>
     <div class="vc-stack">
       <section class="vc-panel" id="sourceSection" aria-labelledby="sourceTitle">
         <div class="vc-panel-head">
@@ -589,8 +593,8 @@
               <h3 data-i18n="dropTitle">音声・動画をここにドロップ</h3>
               <p data-i18n="dropBody">WAV / MP3 / M4A / AAC / OGG / WebM / MP4 など。ファイルは外部へ送信されません。</p>
               <div class="source-actions">
-                <button class="button primary subtle-button" id="chooseFileButton" type="button" data-i18n="chooseFile">ファイルを選択</button>
-                <button class="button subtle-button record-button" id="recordButton" type="button"><span class="record-dot" aria-hidden="true"></span><span id="recordButtonLabel" data-i18n="record">録音する</span></button>
+                <button class="button primary subtle-button" data-bk-button data-bk-variant="primary" id="chooseFileButton" type="button" data-i18n="chooseFile">ファイルを選択</button>
+                <button class="button subtle-button record-button" data-bk-button data-bk-variant="secondary" id="recordButton" type="button"><span class="record-dot" aria-hidden="true"></span><span id="recordButtonLabel" data-i18n="record">録音する</span></button>
               </div>
               <input id="fileInput" type="file" accept="audio/*,video/*,.wav,.mp3,.m4a,.aac,.ogg,.opus,.webm,.mp4" hidden>
             </div>
@@ -600,7 +604,7 @@
             <div class="source-summary">
               <div class="source-summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
               <div class="source-summary-main"><div class="source-name" id="sourceName">—</div><div class="source-meta" id="sourceMeta">—</div></div>
-              <button class="button subtle-button source-replace" id="replaceButton" type="button" data-i18n="replace">変更</button>
+              <button class="button subtle-button source-replace" data-bk-button data-bk-variant="secondary" id="replaceButton" type="button" data-i18n="replace">変更</button>
             </div>
             <div class="wave-wrap">
               <div class="wave-label"><span data-i18n="originalWave">元の音声</span><span class="wave-position" id="sourceWaveDuration">0:00 / 0:00</span></div>
@@ -623,17 +627,20 @@
           <span class="step-badge">STEP 2</span>
         </div>
         <div class="vc-panel-body vc-stack">
+          <p class="tiny-note" id="processScope" role="status" aria-live="polite"></p>
           <div class="process-actions">
-            <button class="action-tile" id="previewButton" type="button" disabled><span class="action-title" data-i18n="tryTen">現在位置から10秒試す</span><span class="action-caption" data-i18n="tryTenCaption">短い範囲でBefore / Afterを確認</span></button>
-            <button class="action-tile primary desktop-run-button" id="processButton" type="button" disabled><span class="action-title" data-i18n="cleanAll">ファイル全体をきれいにする</span><span class="action-caption" data-i18n="cleanAllCaption">GTCRNで音声全体の背景ノイズを軽減</span></button>
+            <button class="action-tile" data-bk-button data-bk-variant="secondary" id="previewButton" type="button" disabled><span class="action-title" data-i18n="tryTen">現在位置から10秒試す</span><span class="action-caption" data-i18n="tryTenCaption">短い範囲でBefore / Afterを確認</span></button>
+            <button class="action-tile primary desktop-run-button" data-bk-button data-bk-variant="primary" id="processButton" type="button" disabled><span class="action-title" data-i18n="cleanAll">ファイル全体をきれいにする</span><span class="action-caption" data-i18n="cleanAllCaption">GTCRNで音声全体の背景ノイズを軽減</span></button>
           </div>
           <p class="process-note" data-i18n="monoNote">処理時に16 kHz・モノラルへ変換します。声を中心とした録音向けです。</p>
-          <div class="progress-card" id="progressCard" aria-live="polite">
+          <div class="progress-card" id="progressCard">
+            <span class="sr-only" id="processAnnouncement" role="status" aria-live="polite"></span>
             <div class="progress-top"><span class="progress-title" id="progressTitle">—</span><span class="progress-percent" id="progressPercent">0%</span></div>
             <div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progressFill"></div></div>
-            <div class="progress-foot"><span class="progress-status" id="progressStatus">—</span><button class="link-button" id="cancelButton" type="button" data-i18n="cancelProcess">キャンセル</button></div>
+            <div class="progress-foot"><span class="progress-status" id="progressStatus">—</span><button class="link-button" data-bk-button data-bk-variant="secondary" id="cancelButton" type="button" data-i18n="cancelProcess">キャンセル</button></div>
           </div>
           <div class="async-error" id="processError" role="alert"></div>
+          <p class="tiny-note" id="processRecovery" hidden data-i18n="processRecovery"></p>
         </div>
       </section>
 
@@ -669,9 +676,10 @@
               </div>
             </div>
           </div>
+          <p class="tiny-note" id="saveScope" role="status" aria-live="polite"></p>
           <div class="export-box" id="exportBox">
             <label class="export-field" for="outputFilename"><span class="export-label" data-i18n="outputFilename">出力ファイル名</span><span class="filename-control"><input class="filename-input" id="outputFilename" type="text" maxlength="120" autocomplete="off" spellcheck="false" aria-describedby="outputFilenameHint"><span class="filename-extension" aria-hidden="true">.wav</span></span><span class="sr-only" id="outputFilenameHint" data-i18n="outputFilenameHint">拡張子は自動で .wav が付きます</span></label>
-            <button class="button primary desktop-save-button" id="saveButton" type="button" data-i18n="saveWav">WAVで保存</button>
+            <button class="button primary desktop-save-button" data-bk-button data-bk-variant="primary" id="saveButton" type="button" data-i18n="saveWav">WAVで保存</button>
             <p class="output-note" data-i18n="outputNote">保存される音声は16 kHz・モノラルのPCM WAVです。</p>
           </div>
         </div>
@@ -702,15 +710,15 @@
   <dialog class="app-confirm-dialog" id="appConfirmDialog" aria-labelledby="appConfirmTitle" aria-describedby="appConfirmMessage">
     <div class="app-confirm-header">
       <h2 class="app-confirm-title" id="appConfirmTitle">確認</h2>
-      <button class="app-confirm-close" id="appConfirmClose" type="button" data-i18n-aria-label="close" aria-label="閉じる">
+      <button class="app-confirm-close" data-bk-header-action id="appConfirmClose" type="button" data-i18n-aria-label="close" aria-label="閉じる">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
     <div class="app-confirm-body">
       <p class="app-confirm-message" id="appConfirmMessage"></p>
       <div class="app-confirm-actions">
-        <button class="app-confirm-button" id="appConfirmCancel" type="button">キャンセル</button>
-        <button class="app-confirm-button primary" id="appConfirmOk" type="button">実行する</button>
+        <button class="app-confirm-button" data-bk-button data-bk-variant="secondary" id="appConfirmCancel" type="button">キャンセル</button>
+        <button class="app-confirm-button primary" data-bk-button data-bk-variant="danger" id="appConfirmOk" type="button">実行する</button>
       </div>
     </div>
   </dialog>
@@ -718,7 +726,7 @@
   <dialog id="helpDialog" aria-labelledby="helpTitle">
     <div class="dialog-header">
       <h2 id="helpTitle" data-i18n="helpTitle">使い方と注意事項</h2>
-      <button class="icon-button" id="closeHelpButton" type="button" data-i18n-title="close" data-i18n-aria-label="close" title="閉じる" aria-label="閉じる">
+      <button class="icon-button" data-bk-header-action id="closeHelpButton" type="button" data-i18n-title="close" data-i18n-aria-label="close" title="閉じる" aria-label="閉じる">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
       </button>
     </div>
@@ -731,6 +739,8 @@
       <ul><li data-i18n="helpNoteFormat">読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。</li><li data-i18n="helpNoteOutput">処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。</li><li data-i18n="helpNoteLimits">他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。</li><li data-i18n="helpNoteMic">マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。</li></ul>
       <h3 data-i18n="helpModelTitle">使用モデル</h3><p data-i18n="helpModelBody">GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。</p>
       <p class="dialog-note" data-i18n="helpOffline">配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。</p>
+      <p data-i18n="helpRetention"></p>
+      <p data-i18n="helpResults"></p>
       <!-- APP:HELP:END -->
       <section class="help-build"><details>
           <summary data-i18n="buildInfo">技術情報</summary>
@@ -745,11 +755,76 @@
 
 
   <nav class="app-mobile-bottom-bar" id="appMobileBottomBar" aria-label="Mobile actions">
-    <button class="app-mobile-bottom-item" id="mobileSourceButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M5 13v6h14v-6"/></svg><span data-i18n="mobileFile">音声</span></button>
-    <button class="app-mobile-bottom-item primary" id="mobileProcessButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h3l2-7 4 13 3-9 2 5h4"/></svg><span data-i18n="mobileClean">ノイズ軽減</span></button>
-    <button class="app-mobile-bottom-item" id="mobileSaveButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4M8 16h8"/></svg><span data-i18n="mobileSave">保存</span></button>
+    <button class="app-mobile-bottom-item" data-bk-button data-bk-variant="secondary" id="mobileSourceButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M5 13v6h14v-6"/></svg><span data-i18n="mobileFile">音声</span></button>
+    <button class="app-mobile-bottom-item primary" data-bk-button data-bk-variant="primary" id="mobileProcessButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h3l2-7 4 13 3-9 2 5h4"/></svg><span data-i18n="mobileClean">ノイズ軽減</span></button>
+    <button class="app-mobile-bottom-item" data-bk-button data-bk-variant="primary" id="mobileSaveButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4M8 16h8"/></svg><span data-i18n="mobileSave">保存</span></button>
   </nav>
 
+  <script>__BK_UI_JS__</script>
+  <script>
+  (() => {
+    'use strict';
+
+    const dialog = document.getElementById('appConfirmDialog');
+    const title = document.getElementById('appConfirmTitle');
+    const message = document.getElementById('appConfirmMessage');
+    const closeButton = document.getElementById('appConfirmClose');
+    const cancelButton = document.getElementById('appConfirmCancel');
+    const okButton = document.getElementById('appConfirmOk');
+    let resolver = null;
+    let restoreFocus = null;
+
+    function defaults() {
+      const ja = (document.documentElement.lang || navigator.language || '').toLowerCase().startsWith('ja');
+      return ja
+        ? { title: '確認', confirmLabel: '実行する', cancelLabel: 'キャンセル' }
+        : { title: 'Confirm', confirmLabel: 'Continue', cancelLabel: 'Cancel' };
+    }
+
+    function finish(result) {
+      if (!dialog.open) return;
+      const currentResolver = resolver;
+      resolver = null;
+      dialog.close();
+      if (restoreFocus instanceof HTMLElement && restoreFocus.isConnected) restoreFocus.focus({ preventScroll: true });
+      restoreFocus = null;
+      if (currentResolver) currentResolver(result);
+    }
+
+    function ask(options = {}) {
+      if (dialog.open) finish(false);
+      const fallback = defaults();
+      title.textContent = options.title || fallback.title;
+      message.textContent = options.message || '';
+      cancelButton.textContent = options.cancelLabel || fallback.cancelLabel;
+      okButton.textContent = options.confirmLabel || fallback.confirmLabel;
+      okButton.classList.toggle('danger', options.tone === 'danger');
+      okButton.classList.toggle('primary', options.tone !== 'danger');
+      restoreFocus = document.activeElement;
+
+      return new Promise(resolve => {
+        resolver = resolve;
+        dialog.showModal();
+        requestAnimationFrame(() => cancelButton.focus({ preventScroll: true }));
+      });
+    }
+
+    closeButton.addEventListener('click', () => finish(false));
+    cancelButton.addEventListener('click', () => finish(false));
+    okButton.addEventListener('click', () => finish(true));
+    dialog.addEventListener('cancel', event => {
+      event.preventDefault();
+      finish(false);
+    });
+    dialog.addEventListener('click', event => {
+      const rect = dialog.getBoundingClientRect();
+      const outside = event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom;
+      if (outside) finish(false);
+    });
+
+    window.AppConfirm = Object.freeze({ ask });
+  })();
+</script>
   <script>
     (() => {
       'use strict';
@@ -796,34 +871,38 @@
 
       const translations = {
         ja: {
+          busyAction:'処理中…', busyPreview:'プレビュー中…', preparingAction:'準備中…', loadingSource:'音声を読み込んでいます…', waitForProcessing:'処理完了または中止後に保存できます。',
+          retentionAudio:'音声・録音・処理結果は自動保存されません。必要な全体処理結果はWAVを保存してください。', scopeEmpty:'音声を選ぶとプレビュー・全体処理を使えます。WAV保存には全体処理結果が必要です。', saveUnavailable:'WAVの保存には音声全体の処理が必要です。プレビューだけでは保存できません。', saveFull:'保存対象：音声全体 · 16 kHz・モノラル・16-bit PCM WAV', previewSavePrevious:'表示中は10秒プレビューです。保存対象は前回の全体処理結果です。', resultCurrent:'今回の結果', replaceTitle:'現在の音声を置き換えますか？', replaceMessage:'現在の音声・録音・処理結果をこのタブから取り除き、新しい音声に置き換えます。元ファイルとダウンロードしたWAVは削除しません。元に戻せません。', replaceConfirm:'音声と結果を置き換える', downloadFailed:'WAVの保存を開始できませんでした。もう一度お試しください。', processRecovery:'もう一度処理するか、別の音声を選んでください。前回の結果があれば保持しています。', languageToggle:'英語に切り替える', mobileActions:'音声の移動・処理・保存', helpRetention:'音声と結果はこのタブ内だけに保持されます。置き換えは読み込み確認後に実行し、取り消せません。キャンセル・読み込み失敗時は前の音声と結果を保持します。', helpResults:'10秒プレビューと全体処理は別です。再処理中・失敗・中止でも前回の全体結果を保持します。プレビュー後のWAV保存は前回の全体結果が対象です。保存を開始した通知は端末への書き込み完了を保証しません。',
           brandMeta:'背景ノイズを軽減 · Before / After比較', helpTitle:'使い方と注意事項', close:'閉じる',
           introTitle:'録音の背景ノイズを軽減', lead:'音声や動画の声を聞き取りやすくします。処理はブラウザー内だけで完結します。', localBadge:'完全ローカル処理',
           sourceTitle:'音声を選ぶ', sourceDesc:'音声または動画を読み込みます。対応形式はブラウザーによって異なります。', dropTitle:'音声・動画をここにドロップ', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 など。ファイルは外部へ送信されません。', chooseFile:'ファイルを選択', record:'録音する', stopRecording:'録音を停止', replace:'変更', originalWave:'元の音声', previewPositionHint:'波形をクリック・タップ・ドラッグして再生位置を変更できます。10秒プレビューはその位置から開始します。', sourceSeekLabel:'元音声の再生位置', beforeSeekLabel:'比較する元音声の再生位置', afterSeekLabel:'処理後の再生位置',
-          processTitle:'ノイズを軽減', processDesc:'設定は不要です。まず10秒だけ試して、良ければ全体を処理できます。', tryTen:'現在位置から10秒試す', tryTenCaption:'短い範囲でBefore / Afterを確認', cleanAll:'ファイル全体をきれいにする', cleanAllCaption:'GTCRNで音声全体の背景ノイズを軽減', monoNote:'処理時に16 kHz・モノラルへ変換します。声を中心とした録音向けです。', cancelProcess:'キャンセル', loadingRuntime:'処理エンジンを準備しています', processingPreview:'10秒プレビューを処理しています', processingAll:'ファイル全体を処理しています',
-          resultTitle:'処理結果', before:'元の音声', after:'処理後', previewResult:'10秒プレビュー', fullResult:'ファイル全体', outputFilename:'出力ファイル名', outputFilenameHint:'拡張子は自動で .wav が付きます', saveWav:'WAVで保存', outputNote:'保存される音声は16 kHz・モノラルのPCM WAVです。',
+          processTitle:'ノイズを軽減', processDesc:'設定は不要です。まず10秒だけ試して、良ければ全体を処理できます。', tryTen:'現在位置から10秒試す', tryTenCaption:'短い範囲でBefore / Afterを確認', cleanAll:'ファイル全体をきれいにする', cleanAllCaption:'GTCRNで音声全体の背景ノイズを軽減', monoNote:'処理時に16 kHz・モノラルへ変換します。声を中心とした録音向けです。', cancelProcess:'処理を中止', loadingRuntime:'処理エンジンを準備しています', processingPreview:'10秒プレビューを処理しています', processingAll:'ファイル全体を処理しています',
+          resultTitle:'処理結果', before:'元の音声', after:'処理後', previewResult:'10秒プレビュー', fullResult:'ファイル全体', outputFilename:'出力ファイル名', outputFilenameHint:'拡張子は自動で .wav が付きます', saveWav:'WAVを保存', outputNote:'保存される音声は16 kHz・モノラルのPCM WAVです。',
           aboutTitle:'このツールでできること', aboutLead:'録音の声を聞き取りやすくするための軽量なノイズ低減です。', noiseCardTitle:'背景ノイズを軽減', noiseCardBody:'エアコン、ファン、サー音など、声に重なる背景ノイズの低減に向いています。', privacyCardTitle:'完全ローカル処理', privacyCardBody:'ファイル、録音、処理結果はサーバーへ送信されません。モデルも配布HTMLに内包されます。', limitCardTitle:'万能な音声修復ではありません', limitCardBody:'他人の声、音楽、強い反響、突然の大音量は十分に除去できない場合があります。',
           buildInfo:'技術情報', modelLabel:'モデル', appVersion:'アプリバージョン', dependencies:'内包依存数', footer:'完全ローカル処理',
           helpBasicsTitle:'基本操作', helpStep1:'音声または動画を選びます。必要ならブラウザーで直接録音できます。', helpStep2:'波形上のシークバーを動かして位置を選び、「現在位置から10秒試す」で確認します。良ければ全体を処理します。', helpStep3:'処理後は同じ再生位置のまま元音声と処理後を切り替えて確認し、WAVで保存します。', helpPrivacyTitle:'プライバシー', helpPrivacyBody:'音声ファイル、録音内容、処理結果はブラウザー内だけで扱われ、このアプリから外部へ送信されません。実行時通信もCSPで遮断しています。', helpNotesTitle:'注意事項', helpNoteFormat:'読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。', helpNoteOutput:'処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。', helpNoteLimits:'他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。', helpNoteMic:'マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。', helpModelTitle:'使用モデル', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。', helpOffline:'配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。',
-          mobileFile:'音声', mobileClean:'ノイズ軽減', mobileSave:'保存', saved:'WAVを保存しました', cancelled:'処理をキャンセルしました', decoded:'音声を読み込みました', recordingStarted:'録音を開始しました', recordingStopped:'録音を停止しました',
+          mobileFile:'音声', mobileClean:'全体を処理', mobileSave:'WAVを保存', saved:'保存を開始しました', cancelled:'処理をキャンセルしました', decoded:'音声を読み込みました', recordingStarted:'録音を開始しました', recordingStopped:'録音を停止しました',
           fileTooLarge:'ファイルが大きすぎます。250 MB以下のファイルを選んでください。', durationTooLong:'60分を超える音声には対応していません。', decodeFailed:'このファイルを音声として読み込めませんでした。別の形式を試してください。', runtimeFailed:'ノイズ低減エンジンを開始できませんでした。WebAssembly SIMD対応ブラウザーでお試しください。', processFailed:'ノイズ低減処理に失敗しました。', micUnavailable:'このブラウザーではマイク録音を利用できません。', micDenied:'マイクを開始できませんでした。権限やHTTPS/localhostでの利用を確認してください。'
         },
         en: {
+          busyAction:'Processing…', busyPreview:'Previewing…', preparingAction:'Preparing…', loadingSource:'Loading audio…', waitForProcessing:'Save after processing finishes or is stopped.',
+          retentionAudio:'Audio, recordings and results are not saved automatically. Save WAV for a full result you want to keep.', scopeEmpty:'Choose audio to preview or process. Save WAV requires a full result.', saveUnavailable:'Process the whole audio to save WAV. A preview alone cannot be saved.', saveFull:'Save scope: whole audio · 16 kHz mono 16-bit PCM WAV', previewSavePrevious:'Showing a 10-second preview. Save WAV uses the previous full result.', resultCurrent:'Current result', replaceTitle:'Replace the current audio?', replaceMessage:'Remove the current audio, recording and results from this tab and replace them with the new audio. Original files and downloaded WAV files are kept. This cannot be undone.', replaceConfirm:'Replace audio and results', downloadFailed:'Could not start the WAV download. Try saving again.', processRecovery:'Try processing again or choose another audio file. Any previous result has been kept.', languageToggle:'Switch to Japanese', mobileActions:'Audio navigation, processing and saving', helpRetention:'Audio and results stay in this tab only. Replacement happens after decoding and confirmation and cannot be undone. Cancel or decode failure keeps the previous audio and results.', helpResults:'The 10-second preview and full processing are separate. Reprocessing, errors and stopping preserve the previous full result. After a preview, Save WAV exports that previous full result. Download started does not confirm a completed write to your device.',
           brandMeta:'Reduce background noise · Before / After comparison', helpTitle:'How to use & notes', close:'Close',
           introTitle:'Reduce background noise in recordings', lead:'Make speech in audio and video easier to hear. Processing stays entirely in your browser.', localBadge:'Fully local processing',
           sourceTitle:'Choose audio', sourceDesc:'Load an audio or video file. Supported formats depend on your browser.', dropTitle:'Drop audio or video here', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 and more. Files are never uploaded.', chooseFile:'Choose file', record:'Record', stopRecording:'Stop recording', replace:'Change', originalWave:'Original audio', previewPositionHint:'Click, tap, or drag the waveform to seek. The 10-second preview starts there.', sourceSeekLabel:'Original audio seek position', beforeSeekLabel:'Comparison original audio seek position', afterSeekLabel:'Cleaned audio seek position',
-          processTitle:'Reduce noise', processDesc:'No tuning required. Try 10 seconds first, then process the whole file if it sounds good.', tryTen:'Try 10 seconds from here', tryTenCaption:'Compare a short Before / After sample', cleanAll:'Clean the whole file', cleanAllCaption:'Reduce background noise across the file with GTCRN', monoNote:'Processing converts audio to 16 kHz mono. It is designed mainly for spoken recordings.', cancelProcess:'Cancel', loadingRuntime:'Preparing the processing engine', processingPreview:'Processing 10-second preview', processingAll:'Processing the whole file',
+          processTitle:'Reduce noise', processDesc:'No tuning required. Try 10 seconds first, then process the whole file if it sounds good.', tryTen:'Try 10 seconds from here', tryTenCaption:'Compare a short Before / After sample', cleanAll:'Clean the whole file', cleanAllCaption:'Reduce background noise across the file with GTCRN', monoNote:'Processing converts audio to 16 kHz mono. It is designed mainly for spoken recordings.', cancelProcess:'Stop processing', loadingRuntime:'Preparing the processing engine', processingPreview:'Processing 10-second preview', processingAll:'Processing the whole file',
           resultTitle:'Result', before:'Original', after:'Cleaned', previewResult:'10-second preview', fullResult:'Whole file', outputFilename:'Output filename', outputFilenameHint:'The .wav extension is added automatically', saveWav:'Save WAV', outputNote:'Saved audio is 16 kHz mono PCM WAV.',
           aboutTitle:'What this tool does', aboutLead:'Lightweight noise reduction focused on making recorded speech easier to hear.', noiseCardTitle:'Reduce background noise', noiseCardBody:'Works best on background noise such as fans, air conditioning, and steady hiss behind speech.', privacyCardTitle:'Fully local', privacyCardBody:'Files, recordings, and results are not sent to a server. The model is embedded in the distributable HTML.', limitCardTitle:'Not universal audio restoration', limitCardBody:'Other voices, music, strong reverb, and sudden loud sounds may not be removed well.',
           buildInfo:'Technical information', modelLabel:'Model', appVersion:'App version', dependencies:'Embedded dependencies', footer:'Fully local processing',
           helpBasicsTitle:'Basics', helpStep1:'Choose an audio or video file, or record directly in the browser when microphone access is available.', helpStep2:'Move the seek bar on the waveform, try 10 seconds there, and process the whole file if you like the result.', helpStep3:'Switch between original and cleaned audio at the same playback position, then save the result as WAV.', helpPrivacyTitle:'Privacy', helpPrivacyBody:'Audio files, recordings, and results stay in the browser and are not sent outside this app. CSP also blocks runtime network access.', helpNotesTitle:'Notes', helpNoteFormat:'Readable formats depend on your browser audio decoder. Unsupported codecs or containers cannot be loaded.', helpNoteOutput:'Audio is converted to 16 kHz mono for processing. This tool targets intelligible speech rather than high-fidelity music conversion.', helpNoteLimits:'Other voices, music, strong reverberation, and transient noise may remain. Listen to important output after saving.', helpNoteMic:'Microphone recording depends on browser permissions and secure-context rules. If file:// is blocked, use HTTPS or localhost.', helpModelTitle:'Model', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) runs locally through WebAssembly.', helpOffline:'The distributable HTML embeds the required code and WASM and does not need a network connection while processing.',
-          mobileFile:'Audio', mobileClean:'Clean', mobileSave:'Save', saved:'WAV saved', cancelled:'Processing cancelled', decoded:'Audio loaded', recordingStarted:'Recording started', recordingStopped:'Recording stopped',
+          mobileFile:'Audio', mobileClean:'Process whole audio', mobileSave:'Save WAV', saved:'Download started', cancelled:'Processing cancelled', decoded:'Audio loaded', recordingStarted:'Recording started', recordingStopped:'Recording stopped',
           fileTooLarge:'The file is too large. Choose a file under 250 MB.', durationTooLong:'Audio longer than 60 minutes is not supported.', decodeFailed:'This file could not be decoded as audio. Try another format.', runtimeFailed:'Could not start the noise-reduction engine. Try a browser with WebAssembly SIMD support.', processFailed:'Noise reduction failed.', micUnavailable:'Microphone recording is not available in this browser.', micDenied:'Could not start the microphone. Check permission and HTTPS/localhost requirements.'
         }
       };
 
       const $ = s => document.querySelector(s);
-      let language = 'ja';
-      try { const saved=localStorage.getItem(`${APP_CONFIG.slug}:language`); language=saved || (navigator.language?.toLowerCase().startsWith('ja')?'ja':'en'); } catch { language=navigator.language?.toLowerCase().startsWith('ja')?'ja':'en'; }
+      const ui=window.BrowserKittyUI;
+      let language=ui.resolveLanguage({legacyKeys:[`${APP_CONFIG.slug}:language`]});
       function t(key) { return translations[language]?.[key] ?? translations.en[key] ?? key; }
       function applyLanguage() {
         document.documentElement.lang=language;
@@ -832,7 +911,17 @@
         document.querySelectorAll('[data-i18n-aria-label]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.i18nAriaLabel)));
         $('#languageButton').textContent=language==='ja'?'EN':'JA';
         $('#recordButtonLabel').textContent=recording ? t('stopRecording') : t('record');
-        updateResultLabels();
+        document.title=(language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name)+' · Browser Kitty';
+        document.querySelector('meta[name="description"]').setAttribute('content',t('lead'));
+        $('#brandName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;
+        $('#footerName').textContent=$('#brandName').textContent;
+        $('#languageButton').setAttribute('aria-label',t('languageToggle'));
+        $('#appMobileBottomBar').setAttribute('aria-label',t('mobileActions'));
+        ui.setSaveStatus($('#retentionStatus'),{mode:'session',language});
+        if($('#appConfirmDialog').open) updateReplacementLabels();
+        for(const which of ['#sourceError','#processError']){const key=$(which).dataset.errorKey;if(key)$(which).textContent=t(key);}
+        if(state.progress) renderProgress();
+        updateResultLabels();updateActionLabels();updateScope();
       }
 
       const toast=$('#appToast'), toastMessage=$('#appToastMessage'), toastAction=$('#appToastAction');
@@ -841,7 +930,7 @@
       window.AppToast=Object.freeze({ show({message,actionLabel='',onAction=null,duration=3200,tone='default'}={}) { clearTimeout(toastTimer); toastMessage.textContent=message||''; toast.dataset.tone=tone; toastHandler=typeof onAction==='function'?onAction:null; toastAction.hidden=!toastHandler; toastAction.textContent=actionLabel||''; toast.classList.add('show'); if(duration>0) toastTimer=setTimeout(dismissToast,duration); return {dismiss:dismissToast}; }, dismiss:dismissToast });
       toastAction.addEventListener('click',()=>{ const h=toastHandler; dismissToast(); h?.(); });
 
-      const state={ generation:0, phase:'empty', source:null, sourcePcm:null, duration:0, sourceRate:0, sourceChannels:0, result:null, resultKind:null, resultStart:0, worker:null, runtimeUrl:null, wasmBytes:null, objectUrls:new Set(), resultUrls:new Set() };
+      const state={ runEpoch:0, runKind:null, progress:null, fullResult:null, fullResultPrevious:false, resultPrevious:false, saving:false, generation:0, phase:'empty', source:null, sourcePcm:null, duration:0, sourceRate:0, sourceChannels:0, result:null, resultKind:null, resultStart:0, worker:null, runtimeUrl:null, wasmBytes:null, objectUrls:new Set(), resultUrls:new Set() };
       let recording=false, recorder=null, recorderStream=null, recorderChunks=[], recordTimer=0, recordStartedAt=0;
       const MAX_BYTES=250*1024*1024, MAX_DURATION=3600, SAMPLE_RATE=16000;
 
@@ -850,12 +939,41 @@
       function makeUrl(blob,kind='source'){ const url=URL.createObjectURL(blob); (kind==='result'?state.resultUrls:state.objectUrls).add(url); return url; }
       function formatTime(seconds){ seconds=Math.max(0,Number(seconds)||0); const m=Math.floor(seconds/60), s=Math.floor(seconds%60); return `${m}:${String(s).padStart(2,'0')}`; }
       function formatBytes(bytes){ if(bytes<1024*1024) return `${(bytes/1024).toFixed(0)} KB`; return `${(bytes/1024/1024).toFixed(bytes>10*1024*1024?0:1)} MB`; }
-      function safeStem(name){ return (name||APP_CONFIG.slug).replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim().slice(0,110) || APP_CONFIG.slug; }
-      function outputName(){ const raw=$('#outputFilename').value; return `${safeStem(raw)}.wav`; }
-      function setPhase(phase){ state.phase=phase; const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing'; const ready=Boolean(state.sourcePcm)&&!busy; $('#previewButton').disabled=!ready; $('#processButton').disabled=!ready; $('#mobileProcessButton').disabled=!ready; $('#chooseFileButton').disabled=busy; $('#replaceButton').disabled=busy; $('#fileInput').disabled=busy; $('#recordButton').disabled=busy||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')); $('#cancelButton').disabled=!(phase==='loading-runtime'||phase==='processing'); $('#mobileSaveButton').disabled=!(state.result&&state.resultKind==='full')||busy; $('#saveButton').disabled=!(state.result&&state.resultKind==='full')||busy; }
-      function showError(which,message){ const el=$(which); el.textContent=message; el.classList.toggle('is-visible',Boolean(message)); }
-      function clearErrors(){ showError('#sourceError',''); showError('#processError',''); }
-      function setProgress(show,title='',percent=0,status=''){ $('#progressCard').classList.toggle('is-visible',show); $('#progressTitle').textContent=title; $('#progressPercent').textContent=`${Math.round(percent)}%`; $('#progressFill').style.width=`${Math.max(0,Math.min(100,percent))}%`; $('#progressStatus').textContent=status; }
+      function sanitizeStem(name){
+        const stem=String(name||'').replace(/[\\/:*?"<>|\x00-\x1f\x7f]/g,' ').replace(/\s+/g,' ').trim().replace(/^[. ]+|[. ]+$/g,'').slice(0,110);
+        return !stem||/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(stem)?APP_CONFIG.slug:stem;
+      }
+      function safeStem(name){return sanitizeStem((name||APP_CONFIG.slug).replace(/\.[^.]+$/,''));}
+      function outputName(){return `${sanitizeStem($('#outputFilename').value.replace(/\.wav$/i,''))}.wav`;}
+      function isBusy(){return ['loading-source','loading-runtime','processing'].includes(state.phase);}
+      function setPhase(phase){
+        state.phase=phase; const busy=isBusy(), processing=phase==='loading-runtime'||phase==='processing';
+        for(const id of ['previewButton','processButton','mobileProcessButton']){const active=id==='previewButton'?state.runKind==='preview':state.runKind==='full';ui.setButtonState($('#'+id),processing&&active?'busy':state.sourcePcm&&!busy&&!recording?'ready':'unavailable');}
+        for(const id of ['chooseFileButton','replaceButton'])ui.setButtonState($('#'+id),busy||recording?'unavailable':'ready');
+        $('#fileInput').disabled=busy||recording;
+        ui.setButtonState($('#recordButton'),busy||(!recording&&(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'))?'unavailable':'ready');
+        ui.setButtonState($('#cancelButton'),processing?'ready':'unavailable');
+        for(const id of ['saveButton','mobileSaveButton'])ui.setButtonState($('#'+id),state.saving?'busy':state.fullResult&&!busy&&!recording?'ready':'unavailable');
+        $('#processAnnouncement').textContent=phase==='loading-runtime'?t('loadingRuntime'):phase==='processing'?t(state.runKind==='preview'?'processingPreview':'processingAll'):'';
+        updateResultLabels();updateActionLabels();updateScope();
+      }
+      function showError(which,message,key=''){const el=$(which);el.dataset.errorKey=key;el.textContent=message;el.classList.toggle('is-visible',Boolean(message));if(which==='#processError')$('#processRecovery').hidden=!message;}
+      function clearErrors(){showError('#sourceError','');showError('#processError','');}
+      function setProgress(show,title='',percent=0,status=''){
+        state.progress=show?{title,percent,status}:null;$('#progressCard').classList.toggle('is-visible',show);if(show)renderProgress();
+      }
+      function renderProgress(){const p=state.progress;if(!p)return;const indeterminate=state.phase==='loading-runtime';$('#progressPercent').hidden=indeterminate;$('#progressFill').parentElement.hidden=indeterminate;$('#progressTitle').textContent=state.phase==='loading-runtime'?t('loadingRuntime'):t(state.runKind==='preview'?'processingPreview':'processingAll');$('#progressPercent').textContent=`${Math.round(p.percent)}%`;$('#progressFill').style.width=`${Math.max(0,Math.min(100,p.percent))}%`;$('#progressStatus').textContent=p.status;}
+      function updateActionLabels(){
+        const processing=['loading-runtime','processing'].includes(state.phase);
+        const action=state.phase==='loading-runtime'?t('preparingAction'):t(state.runKind==='preview'?'busyPreview':'busyAction');
+        $('#previewButton').querySelector('.action-title').textContent=processing&&state.runKind==='preview'?action:t('tryTen');
+        $('#processButton').querySelector('.action-title').textContent=processing&&state.runKind==='full'?action:t('cleanAll');
+        $('#mobileProcessButton').querySelector('span').textContent=processing&&state.runKind==='full'?action:t('mobileClean');
+      }
+      function updateScope(){
+        $('#processScope').textContent=state.phase==='loading-source'?t('loadingSource'):state.sourcePcm?`${t('fullResult')} · ${formatTime(state.sourcePcm.length/SAMPLE_RATE)} | ${t('tryTen')}`:t('scopeEmpty');
+        $('#saveScope').textContent=!state.fullResult?t('saveUnavailable'):(state.fullResultPrevious?ui.text('previousResult',language)+' · ':'')+t('saveFull')+' · '+formatTime(state.fullResult.pcm.length/SAMPLE_RATE)+(state.resultKind==='preview'?' · '+t('previewSavePrevious'):'')+(isBusy()?' · '+t('waitForProcessing'):'');
+      }
 
       function drawWave(canvas,data){
         const ctx=canvas.getContext('2d'); const dpr=Math.min(window.devicePixelRatio||1,2); const rect=canvas.getBoundingClientRect(); const w=Math.max(320,Math.floor(rect.width*dpr)), h=Math.floor((parseFloat(getComputedStyle(canvas).height)||82)*dpr); if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
@@ -933,23 +1051,30 @@
       function pcmToWav(samples,sampleRate=SAMPLE_RATE){ const bytes=44+samples.length*2, buf=new ArrayBuffer(bytes), view=new DataView(buf); const str=(o,v)=>{for(let i=0;i<v.length;i++)view.setUint8(o+i,v.charCodeAt(i));}; str(0,'RIFF');view.setUint32(4,bytes-8,true);str(8,'WAVE');str(12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,1,true);view.setUint32(24,sampleRate,true);view.setUint32(28,sampleRate*2,true);view.setUint16(32,2,true);view.setUint16(34,16,true);str(36,'data');view.setUint32(40,samples.length*2,true); let o=44; for(let i=0;i<samples.length;i++,o+=2){const v=Math.max(-1,Math.min(1,samples[i]));view.setInt16(o,v<0?v*0x8000:v*0x7fff,true);} return new Blob([buf],{type:'audio/wav'}); }
 
       async function decodeTo16k(file,generation){
-        if(file.size>MAX_BYTES) throw new Error(t('fileTooLarge'));
+        if(file.size>MAX_BYTES) throw new Error('fileTooLarge');
         const bytes=await file.arrayBuffer(); if(generation!==state.generation) return null;
-        const AC=window.AudioContext||window.webkitAudioContext; if(!AC) throw new Error(t('decodeFailed')); const ac=new AC(); let decoded;
-        try { decoded=await ac.decodeAudioData(bytes.slice(0)); } catch(e){ try{await ac.close();}catch{} throw new Error(t('decodeFailed')); }
-        const srcRate=decoded.sampleRate, channels=decoded.numberOfChannels, duration=decoded.duration; if(duration>MAX_DURATION){try{await ac.close();}catch{} throw new Error(t('durationTooLong'));}
-        const frames=Math.max(1,Math.ceil(duration*SAMPLE_RATE)); const OfflineCtx=window.OfflineAudioContext||window.webkitOfflineAudioContext; if(!OfflineCtx) throw new Error(t('decodeFailed')); const offline=new OfflineCtx(1,frames,SAMPLE_RATE); const src=offline.createBufferSource();src.buffer=decoded;src.connect(offline.destination);src.start();const rendered=await offline.startRendering();try{await ac.close();}catch{}
+        const AC=window.AudioContext||window.webkitAudioContext; if(!AC) throw new Error('decodeFailed'); const ac=new AC(); let decoded;
+        try { decoded=await ac.decodeAudioData(bytes.slice(0)); } catch(e){ try{await ac.close();}catch{} throw new Error('decodeFailed'); }
+        const srcRate=decoded.sampleRate, channels=decoded.numberOfChannels, duration=decoded.duration; if(duration>MAX_DURATION){try{await ac.close();}catch{} throw new Error('durationTooLong');}
+        const frames=Math.max(1,Math.ceil(duration*SAMPLE_RATE)); const OfflineCtx=window.OfflineAudioContext||window.webkitOfflineAudioContext; if(!OfflineCtx) throw new Error('decodeFailed'); const offline=new OfflineCtx(1,frames,SAMPLE_RATE); const src=offline.createBufferSource();src.buffer=decoded;src.connect(offline.destination);src.start();const rendered=await offline.startRendering();try{await ac.close();}catch{}
         if(generation!==state.generation) return null; return {pcm:new Float32Array(rendered.getChannelData(0)),duration,srcRate,channels};
       }
 
+      function updateReplacementLabels(){
+        $('#appConfirmTitle').textContent=t('replaceTitle');$('#appConfirmMessage').textContent=t('replaceMessage');$('#appConfirmOk').textContent=t('replaceConfirm');$('#appConfirmCancel').textContent=ui.text('cancel',language);
+      }
       async function loadSource(file){
-        if(!file)return; stopProcessing(false); clearErrors(); state.generation+=1; const gen=state.generation; revokeObjectUrls(); state.source=file; state.sourcePcm=null; state.result=null;state.resultKind=null; $('#resultSection').hidden=true;
-        $('#sourceAudio').pause(); $('#sourceAudio').removeAttribute('src'); $('#sourceAudio').load();
-        $('#resultAudio').pause(); $('#resultAudio').removeAttribute('src'); $('#resultAudio').load();
-        resetWaveSeeks(); drawWave($('#sourceWaveCanvas'),null);
-        $('#dropZone').hidden=true; $('#sourceCard').hidden=false; $('#sourceName').textContent=file.name||'recording'; $('#sourceMeta').textContent=`${formatBytes(file.size)} · …`; setPhase('loading-source');
-        try { const d=await decodeTo16k(file,gen); if(!d||gen!==state.generation)return; state.sourcePcm=d.pcm;state.duration=d.duration;state.sourceRate=d.srcRate;state.sourceChannels=d.channels; $('#sourceMeta').textContent=`${formatTime(d.duration)} · ${Math.round(d.srcRate/100)/10} kHz · ${d.channels===1?'Mono':`${d.channels} ch`}`; syncSeekGroup(seekGroups[0],0); const srcUrl=makeUrl(pcmToWav(d.pcm)); $('#sourceAudio').src=srcUrl; $('#outputFilename').value=`${safeStem(file.name)}-cleaned`; requestAnimationFrame(()=>drawWave($('#sourceWaveCanvas'),d.pcm)); setPhase('ready'); window.AppToast.show({message:t('decoded'),tone:'success'}); }
-        catch(e){ if(gen!==state.generation)return; state.sourcePcm=null; $('#dropZone').hidden=false;$('#sourceCard').hidden=true;showError('#sourceError',e?.message||t('decodeFailed'));setPhase('error'); }
+        if(!file||recording)return;stopProcessing(false);clearErrors();const gen=++state.generation;setPhase('loading-source');
+        try{
+          const d=await decodeTo16k(file,gen);if(!d||gen!==state.generation)return;
+          if(state.sourcePcm){const accepted=await window.AppConfirm.ask({title:t('replaceTitle'),message:t('replaceMessage'),confirmLabel:t('replaceConfirm'),cancelLabel:ui.text('cancel',language),tone:'danger'});if(gen!==state.generation)return;if(!accepted){setPhase(state.result?'result':'ready');return;}}
+          revokeObjectUrls();state.source=file;state.sourcePcm=d.pcm;state.duration=d.duration;state.sourceRate=d.srcRate;state.sourceChannels=d.channels;state.result=null;state.resultKind=null;state.fullResult=null;state.resultPrevious=false;state.fullResultPrevious=false;
+          $('#resultSection').hidden=true;
+          for(const id of ['sourceAudio','resultAudio']){const audio=$('#'+id);audio.pause();audio.removeAttribute('src');audio.load();}
+          resetWaveSeeks();$('#dropZone').hidden=true;$('#sourceCard').hidden=false;$('#sourceName').textContent=file.name||'recording';
+          $('#sourceMeta').textContent=`${formatTime(d.duration)} · ${Math.round(d.srcRate/100)/10} kHz · ${d.channels===1?'Mono':`${d.channels} ch`}`;
+          $('#sourceAudio').src=makeUrl(pcmToWav(d.pcm));$('#outputFilename').value=`${safeStem(file.name)}-cleaned`;requestAnimationFrame(()=>drawWave($('#sourceWaveCanvas'),d.pcm));setPhase('ready');window.AppToast.show({message:t('decoded'),tone:'success'});
+        }catch(e){if(gen!==state.generation)return;const key=['fileTooLarge','durationTooLong','decodeFailed'].find(k=>k===e?.message||t(k)===e?.message)||'decodeFailed';showError('#sourceError',t(key),key);setPhase(state.result?'result':state.sourcePcm?'ready':'error');}
       }
 
       async function ensureRuntime(){
@@ -980,41 +1105,54 @@
         };` }
 
       async function runDenoise(kind){
-        if(!state.sourcePcm||state.phase==='processing'||state.phase==='loading-runtime')return; clearErrors(); const gen=state.generation; let start=0,input;
+        if(!state.sourcePcm||isBusy()||recording)return; clearErrors(); const gen=state.generation, epoch=++state.runEpoch; state.runKind=kind; let start=0,input; let ownedWorker=null; const current=()=>gen===state.generation&&epoch===state.runEpoch;
         if(kind==='preview'){ const desired=$('#sourceAudio').currentTime||0; start=Math.max(0,Math.min(state.duration,desired)); const a=Math.floor(start*SAMPLE_RATE), b=Math.min(state.sourcePcm.length,a+10*SAMPLE_RATE); input=state.sourcePcm.slice(a,b); start=a/SAMPLE_RATE; }
         else input=state.sourcePcm.slice();
-        if(!input.length)return;
+        if(!input.length)return;const inputLength=input.length;
+        state.resultPrevious=Boolean(state.result);state.fullResultPrevious=Boolean(state.fullResult);
         try{
-          setPhase('loading-runtime'); setProgress(true,t('loadingRuntime'),2,'GTCRN · WebAssembly'); await ensureRuntime(); if(gen!==state.generation)return;
+          setPhase('loading-runtime'); setProgress(true,t('loadingRuntime'),0,'GTCRN · WebAssembly'); await ensureRuntime(); if(!current())return;
           setPhase('processing'); setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),4,`${formatTime(input.length/SAMPLE_RATE)}`);
-          const workerUrl=URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'})); const worker=new Worker(workerUrl,{type:'module'}); URL.revokeObjectURL(workerUrl); state.worker=worker;
-          worker.onmessage=(event)=>{ if(gen!==state.generation)return; const d=event.data; if(d.type==='progress'){setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),5+d.value*94,`${formatTime(Math.min(input.length,d.value*input.length)/SAMPLE_RATE)} / ${formatTime(input.length/SAMPLE_RATE)}`);} else if(d.type==='done'){ const out=new Float32Array(d.buffer); worker.terminate(); if(state.worker===worker)state.worker=null; setProgress(false); commitResult(kind,start,out); setPhase('result'); } else if(d.type==='error'){console.error('[Voice Cleaner] GTCRN inference failed:', d.message || 'unknown error');worker.terminate();if(state.worker===worker)state.worker=null;setProgress(false);showError('#processError',t('processFailed'));setPhase('ready');} };
-          worker.onerror=(event)=>{console.error('[Voice Cleaner] Worker startup failed:', event.message || event.type);worker.terminate();if(state.worker===worker)state.worker=null;setProgress(false);showError('#processError',t('runtimeFailed'));setPhase('ready');};
+          const workerUrl=URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'}));let worker;try{worker=new Worker(workerUrl,{type:'module'});}finally{URL.revokeObjectURL(workerUrl);} state.worker=worker;ownedWorker=worker;
+          worker.onmessage=(event)=>{ if(!current()||state.worker!==worker)return; const d=event.data; if(d.type==='progress'){setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),5+d.value*94,`${formatTime(Math.min(inputLength,d.value*inputLength)/SAMPLE_RATE)} / ${formatTime(inputLength/SAMPLE_RATE)}`);} else if(d.type==='done'){ const out=new Float32Array(d.buffer); worker.terminate(); if(state.worker===worker)state.worker=null; setProgress(false); commitResult(kind,start,out); setPhase('result'); } else if(d.type==='error'){console.error('[Voice Cleaner] GTCRN inference failed:', d.message || 'unknown error');worker.terminate();if(state.worker===worker)state.worker=null;setProgress(false);showError('#processError',t('processFailed'),'processFailed');setPhase('ready');} };
+          worker.onerror=(event)=>{if(!current()||state.worker!==worker)return;console.error('[Voice Cleaner] Worker startup failed:', event.message || event.type);worker.terminate();if(state.worker===worker)state.worker=null;setProgress(false);showError('#processError',t('runtimeFailed'),'runtimeFailed');setPhase('ready');};
           const wasmCopy=state.wasmBytes.slice(); worker.postMessage({type:'process',moduleUrl:state.runtimeUrl,wasmBuffer:wasmCopy.buffer,pcmBuffer:input.buffer},[wasmCopy.buffer,input.buffer]);
-        } catch(e){ console.error('[Voice Cleaner] Audio processing setup failed:', e); if(gen!==state.generation)return; setProgress(false);showError('#processError',e?.message||t('runtimeFailed'));setPhase('ready'); }
+        } catch(e){ if(!current())return;console.error('[Voice Cleaner] Audio processing setup failed:', e);if(ownedWorker){ownedWorker.terminate();if(state.worker===ownedWorker)state.worker=null;}setProgress(false);showError('#processError',t('runtimeFailed'),'runtimeFailed');setPhase('ready'); } finally { if(!current()&&ownedWorker){ownedWorker.terminate();if(state.worker===ownedWorker)state.worker=null;} }
       }
 
       function getResultOriginal(){ if(!state.result)return null; if(state.resultKind==='full')return state.sourcePcm; const a=Math.round(state.resultStart*SAMPLE_RATE);return state.sourcePcm.slice(a,a+state.result.length); }
       function commitResult(kind,start,output){
-        revokeResultUrls(); state.result=output;state.resultKind=kind;state.resultStart=start; const original=getResultOriginal(); const originalUrl=makeUrl(pcmToWav(original),'result'), cleanUrl=makeUrl(pcmToWav(output),'result'); $('#resultAudio').dataset.originalUrl=originalUrl;$('#resultAudio').dataset.cleanedUrl=cleanUrl;$('#resultAudio').src=originalUrl;$('#originalToggle').classList.add('is-active');$('#cleanedToggle').classList.remove('is-active');$('#resultSection').hidden=false; updateResultLabels(); syncSeekGroup(seekGroups[1],0); requestAnimationFrame(()=>{drawWave($('#beforeWaveCanvas'),original);drawWave($('#afterWaveCanvas'),output);$('#resultSection').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});});
+        revokeResultUrls(); state.result=output;state.resultKind=kind;state.resultStart=start;state.resultPrevious=false;if(kind==='full'){state.fullResult={pcm:output,epoch:state.runEpoch};state.fullResultPrevious=false;}else if(state.fullResult)state.fullResultPrevious=true; const original=getResultOriginal(); const originalUrl=makeUrl(pcmToWav(original),'result'), cleanUrl=makeUrl(pcmToWav(output),'result'); $('#resultAudio').dataset.originalUrl=originalUrl;$('#resultAudio').dataset.cleanedUrl=cleanUrl;$('#resultAudio').src=originalUrl;$('#originalToggle').classList.add('is-active');$('#cleanedToggle').classList.remove('is-active');$('#resultSection').hidden=false; updateResultLabels(); syncSeekGroup(seekGroups[1],0); requestAnimationFrame(()=>{drawWave($('#beforeWaveCanvas'),original);drawWave($('#afterWaveCanvas'),output);$('#resultSection').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});});
       }
-      function updateResultLabels(){ if(!state.result)return; const dur=state.result.length/SAMPLE_RATE; $('#resultSubtitle').textContent=state.resultKind==='full'?t('fullResult'):t('previewResult'); $('#resultContext').textContent=state.resultKind==='full'?`${t('fullResult')} · ${formatTime(dur)} · 16 kHz · Mono`:`${t('previewResult')} · ${formatTime(state.resultStart)} – ${formatTime(state.resultStart+dur)}`; }
-      async function switchResult(which){ const audio=$('#resultAudio'); if(!state.result)return; const time=audio.currentTime||0, playing=!audio.paused; const url=audio.dataset[which==='cleaned'?'cleanedUrl':'originalUrl']; if(audio.src===url)return; $('#originalToggle').classList.toggle('is-active',which==='original');$('#cleanedToggle').classList.toggle('is-active',which==='cleaned'); audio.dataset.pendingWaveSeek=String(time); audio.src=url; syncSeekGroup(seekGroups[1],time); try{await new Promise(resolve=>audio.addEventListener('loadedmetadata',resolve,{once:true}));seekGroupTo(seekGroups[1],time);if(playing)await audio.play();}catch{} }
-      function saveResult(){ if(!state.result||state.resultKind!=='full')return; const blob=pcmToWav(state.result); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=outputName();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);window.AppToast.show({message:t('saved'),tone:'success'}); }
-      function stopProcessing(showToast=true){ if(state.worker){state.worker.terminate();state.worker=null;} if(state.phase==='processing'||state.phase==='loading-runtime'){setProgress(false);setPhase(state.sourcePcm?'ready':'empty');if(showToast)window.AppToast.show({message:t('cancelled')});} }
+      function updateResultLabels(){ if(!state.result)return; const dur=state.result.length/SAMPLE_RATE; $('#resultSubtitle').textContent=`${state.resultPrevious?ui.text('previousResult',language):t('resultCurrent')} · ${state.resultKind==='full'?t('fullResult'):t('previewResult')}`; $('#resultContext').textContent=state.resultKind==='full'?`${t('fullResult')} · ${formatTime(dur)} · 16 kHz · Mono`:`${t('previewResult')} · ${formatTime(state.resultStart)} – ${formatTime(state.resultStart+dur)}`; }
+      async function switchResult(which){ const audio=$('#resultAudio'); if(!state.result)return; const result=state.result,gen=state.generation; const time=audio.currentTime||0, playing=!audio.paused; const url=audio.dataset[which==='cleaned'?'cleanedUrl':'originalUrl']; if(audio.src===url)return; $('#originalToggle').classList.toggle('is-active',which==='original');$('#cleanedToggle').classList.toggle('is-active',which==='cleaned'); audio.dataset.pendingWaveSeek=String(time); audio.src=url; syncSeekGroup(seekGroups[1],time); try{await new Promise(resolve=>audio.addEventListener('loadedmetadata',resolve,{once:true}));if(result!==state.result||gen!==state.generation)return;seekGroupTo(seekGroups[1],time);if(playing)await audio.play();}catch{} }
+      function saveResult(){
+        if(!state.fullResult||isBusy()||recording||state.saving)return;
+        // Capture the full-result identity and user filename together at invocation.
+        const snapshot={result:state.fullResult,filename:outputName()};state.saving=true;setPhase(state.phase);let url=null;
+        try{url=URL.createObjectURL(pcmToWav(snapshot.result.pcm));const a=document.createElement('a');a.href=url;a.download=snapshot.filename;document.body.append(a);a.click();a.remove();window.AppToast.show({message:`${ui.text('downloadStarted',language)} · ${snapshot.filename}`});}
+        catch(e){showError('#processError',t('downloadFailed'),'downloadFailed');}
+        finally{if(url)setTimeout(()=>URL.revokeObjectURL(url),1000);state.saving=false;setPhase(state.phase);}
+      }
+      function stopProcessing(showToast=true){
+        // Invalidate even while runtime preparation is pending and before any worker exists.
+        ++state.runEpoch;if(state.worker){state.worker.terminate();state.worker=null;}
+        if(state.phase==='processing'||state.phase==='loading-runtime'){setProgress(false);setPhase(state.sourcePcm?'ready':'empty');if(showToast)window.AppToast.show({message:t('cancelled')});}
+      }
 
       async function toggleRecording(){
+        if(isBusy())return;
         if(recording){ recorder?.stop(); return; }
-        if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){showError('#sourceError',t('micUnavailable'));return;}
-        try{ recorderStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); const options={}; for(const m of ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/mp4']){if(MediaRecorder.isTypeSupported?.(m)){options.mimeType=m;break;}} recorderChunks=[];recorder=new MediaRecorder(recorderStream,options); recorder.ondataavailable=e=>{if(e.data?.size)recorderChunks.push(e.data);}; recorder.onstop=async()=>{recording=false;clearInterval(recordTimer);recorderStream?.getTracks().forEach(tr=>tr.stop());recorderStream=null;$('#recordButton').classList.remove('is-recording');$('#recordButtonLabel').textContent=t('record');const mime=recorder.mimeType||'audio/webm';const ext=mime.includes('mp4')?'m4a':mime.includes('ogg')?'ogg':'webm';const blob=new Blob(recorderChunks,{type:mime});const file=new File([blob],`recording-${new Date().toISOString().replace(/[:.]/g,'-')}.${ext}`,{type:mime});window.AppToast.show({message:t('recordingStopped')});await loadSource(file);}; recorder.start(250); recording=true;recordStartedAt=Date.now();$('#recordButton').classList.add('is-recording');$('#recordButtonLabel').textContent=`${t('stopRecording')} 0:00`;recordTimer=setInterval(()=>{$('#recordButtonLabel').textContent=`${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}`;},500);window.AppToast.show({message:t('recordingStarted')}); }
-        catch(e){showError('#sourceError',t('micDenied')); recorderStream?.getTracks().forEach(tr=>tr.stop()); recorderStream=null;recording=false;}
+        if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){showError('#sourceError',t('micUnavailable'),'micUnavailable');return;}
+        try{ recorderStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); const options={}; for(const m of ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/mp4']){if(MediaRecorder.isTypeSupported?.(m)){options.mimeType=m;break;}} recorderChunks=[];recorder=new MediaRecorder(recorderStream,options); recorder.ondataavailable=e=>{if(e.data?.size)recorderChunks.push(e.data);}; recorder.onstop=async()=>{recording=false;setPhase(state.phase);clearInterval(recordTimer);recorderStream?.getTracks().forEach(tr=>tr.stop());recorderStream=null;$('#recordButton').classList.remove('is-recording');$('#recordButtonLabel').textContent=t('record');const mime=recorder.mimeType||'audio/webm';const ext=mime.includes('mp4')?'m4a':mime.includes('ogg')?'ogg':'webm';const blob=new Blob(recorderChunks,{type:mime});const file=new File([blob],`recording-${new Date().toISOString().replace(/[:.]/g,'-')}.${ext}`,{type:mime});window.AppToast.show({message:t('recordingStopped')});await loadSource(file);}; recorder.start(250); recording=true;setPhase(state.phase);recordStartedAt=Date.now();$('#recordButton').classList.add('is-recording');$('#recordButtonLabel').textContent=`${t('stopRecording')} 0:00`;recordTimer=setInterval(()=>{$('#recordButtonLabel').textContent=`${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}`;},500);window.AppToast.show({message:t('recordingStarted')}); }
+        catch(e){showError('#sourceError',t('micDenied'),'micDenied'); recorderStream?.getTracks().forEach(tr=>tr.stop()); recorderStream=null;recording=false;setPhase(state.phase);}
       }
 
       $('#chooseFileButton').addEventListener('click',()=>$('#fileInput').click()); $('#replaceButton').addEventListener('click',()=>$('#fileInput').click()); $('#fileInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});
       const drop=$('#dropZone'); ['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('is-over');})); ['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('is-over');})); drop.addEventListener('drop',e=>{const f=e.dataTransfer?.files?.[0];if(f)loadSource(f);});
       $('#recordButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
       $('#mobileSourceButton').addEventListener('click',()=>$('#sourceSection').scrollIntoView({behavior:'smooth',block:'start'})); $('#mobileProcessButton').addEventListener('click',()=>runDenoise('full')); $('#mobileSaveButton').addEventListener('click',saveResult);
-      $('#languageButton').addEventListener('click',()=>{language=language==='ja'?'en':'ja';try{localStorage.setItem(`${APP_CONFIG.slug}:language`,language);}catch{}applyLanguage();});
+      $('#languageButton').addEventListener('click',()=>{const choice=ui.chooseLanguage(language==='ja'?'en':'ja');language=choice.language;applyLanguage();if(!choice.persisted)window.AppToast.show({message:ui.text('languageSessionOnly',language)});});
       const help=$('#helpDialog');$('#helpButton').addEventListener('click',()=>help.showModal());$('#closeHelpButton').addEventListener('click',()=>help.close());help.addEventListener('click',e=>{if(e.target!==e.currentTarget)return;const r=help.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)help.close();});
 
       $('#brandName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;$('#versionBadge').textContent=`v${APP_CONFIG.version}`;$('#footerName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;$('#buildVersion').textContent=APP_CONFIG.version;$('#dependencyCount').textContent=String(BUILD_MANIFEST.dependencies?.length||0);document.body.classList.add('has-mobile-bottom-bar'); setPhase('empty'); resetWaveSeeks(); applyLanguage();

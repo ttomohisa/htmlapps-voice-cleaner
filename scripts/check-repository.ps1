@@ -54,6 +54,11 @@ foreach ($relative in $required) {
 
 & (Join-Path $Root "scripts\check-powershell-syntax.ps1") -RootPath $Root
 
+$uiTests = @(Get-ChildItem -LiteralPath (Join-Path $Root 'tests') -Filter '*.test.cjs' | ForEach-Object { $_.FullName })
+& node --test @uiTests
+if ($LASTEXITCODE -ne 0) { throw 'Voice Cleaner UI regression tests failed.' }
+
+
 $mobileBottomBarPath = Join-Path $Root "components\mobile-bottom-bar.html"
 $mobileBottomBarText = Get-Content -Raw -Encoding UTF8 $mobileBottomBarPath
 $mobileBottomBarRequiredTokens = @(
