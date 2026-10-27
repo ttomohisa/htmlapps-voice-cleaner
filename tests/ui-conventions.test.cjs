@@ -1,6 +1,25 @@
 const test=require('node:test'),assert=require('node:assert/strict');
 const {harness,deferred}=require('./voice-harness.cjs');
 function ready(h){h.state.sourcePcm=new Float32Array([.1,.2,.3]);h.state.duration=3/16000;h.setPhase('ready');}
+
+for(const accept of [false,true])test('replacement '+(accept?'confirm':'cancel')+' restores the initiating control after it is enabled',async()=>{
+ const h=harness({confirmDialog:true});ready(h);const trigger=h.element('#replaceButton');trigger.focus();
+ h.setDecoder(async()=>({pcm:new Float32Array([.8]),duration:1,srcRate:16000,channels:1}));
+ const task=h.loadSource({name:'replacement.wav'});for(let tick=0;tick<10;tick++)await Promise.resolve();
+ assert.equal(trigger.disabled,true);assert.equal(h.element('#appConfirmDialog').open,true);
+ h.element(accept?'#appConfirmOk':'#appConfirmCancel').events.click();await task;
+ assert.equal(trigger.disabled,false);assert.equal(h.context.document.activeElement,trigger);
+});
+test('replacement focus falls back when the initiator disappeared and old loads do not refocus it',async()=>{
+ for(const obsolete of [false,true]){
+  const h=harness({confirmDialog:true});ready(h);const trigger=h.element('#recordButton');trigger.disabled=false;trigger.focus();
+  h.setDecoder(async()=>({pcm:new Float32Array([.8]),duration:1,srcRate:16000,channels:1}));
+  const task=h.loadSource({name:'replacement.wav'});for(let tick=0;tick<10;tick++)await Promise.resolve();
+  if(obsolete)h.state.generation++;else trigger.isConnected=false;
+  h.element('#appConfirmCancel').events.click();await task;
+  if(obsolete)assert.notEqual(h.context.document.activeElement,trigger);else assert.equal(h.context.document.activeElement,h.element('#replaceButton'));
+ }
+});
 test('cancel during runtime preparation cannot create a worker or replace a previous full result',async()=>{const h=harness();ready(h);const previous=new Float32Array([.4]);h.state.result=previous;h.state.resultKind='full';const pending=deferred();h.setRuntime(()=>pending.promise);const run=h.runDenoise('full');h.stopProcessing();pending.resolve();await run;assert.equal(h.workers.length,0);assert.equal(h.state.result,previous);assert.equal(h.state.phase,'ready');});
 test('queued old worker events cannot change phase, progress, result or current worker',async()=>{const h=harness();ready(h);h.setRuntime(async()=>{});await h.runDenoise('full');const old=h.workers[0];h.stopProcessing();await h.runDenoise('preview');const current=h.workers[1];const previous=h.state.result;old.emit({type:'progress',value:.9});const phase=h.state.phase;old.emit({type:'done',buffer:new Float32Array([.9]).buffer});old.emit({type:'error',message:'old'});old.error();assert.equal(h.state.phase,phase);assert.equal(h.state.result,previous);assert.equal(h.state.worker,current);assert.equal(current.terminated,false);});
 test('preview keeps the previous full WAV saveable with an edited safe filename',async()=>{const h=harness();ready(h);const full=new Float32Array([.1,-.2,.3]);h.commitResult('full',0,full);h.setPhase('result');h.element('#outputFilename').value='my/edited.wav';h.commitResult('preview',0,new Float32Array([.9]));h.setPhase('result');h.saveResult();assert.equal(h.element('#saveButton').disabled,false);assert.equal(h.element('#mobileSaveButton').disabled,false);assert.equal(h.downloads[0]?.name,'my edited.wav');const data=await (await fetch(h.downloads[0].url)).arrayBuffer();const view=new DataView(data);assert.equal(view.getUint32(24,true),16000);assert.equal(view.getUint16(22,true),1);assert.equal(view.getUint16(34,true),16);assert.equal(view.getUint32(40,true),full.length*2);assert.match(h.toast(),/Download started/);assert.match(h.element('#saveScope').textContent,/Previous result/);});

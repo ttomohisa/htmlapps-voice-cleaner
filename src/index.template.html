@@ -1064,10 +1064,10 @@
         $('#appConfirmTitle').textContent=t('replaceTitle');$('#appConfirmMessage').textContent=t('replaceMessage');$('#appConfirmOk').textContent=t('replaceConfirm');$('#appConfirmCancel').textContent=ui.text('cancel',language);
       }
       async function loadSource(file){
-        if(!file||recording)return;stopProcessing(false);clearErrors();const gen=++state.generation;setPhase('loading-source');
+        if(!file||recording)return;const origin=document.activeElement;let hadConfirmation=false;stopProcessing(false);clearErrors();const gen=++state.generation;setPhase('loading-source');
         try{
           const d=await decodeTo16k(file,gen);if(!d||gen!==state.generation)return;
-          if(state.sourcePcm){const accepted=await window.AppConfirm.ask({title:t('replaceTitle'),message:t('replaceMessage'),confirmLabel:t('replaceConfirm'),cancelLabel:ui.text('cancel',language),tone:'danger'});if(gen!==state.generation)return;if(!accepted){setPhase(state.result?'result':'ready');return;}}
+          if(state.sourcePcm){hadConfirmation=true;const accepted=await window.AppConfirm.ask({title:t('replaceTitle'),message:t('replaceMessage'),confirmLabel:t('replaceConfirm'),cancelLabel:ui.text('cancel',language),tone:'danger'});if(gen!==state.generation)return;if(!accepted){setPhase(state.result?'result':'ready');return;}}
           revokeObjectUrls();state.source=file;state.sourcePcm=d.pcm;state.duration=d.duration;state.sourceRate=d.srcRate;state.sourceChannels=d.channels;state.result=null;state.resultKind=null;state.fullResult=null;state.resultPrevious=false;state.fullResultPrevious=false;
           $('#resultSection').hidden=true;
           for(const id of ['sourceAudio','resultAudio']){const audio=$('#'+id);audio.pause();audio.removeAttribute('src');audio.load();}
@@ -1075,6 +1075,7 @@
           $('#sourceMeta').textContent=`${formatTime(d.duration)} · ${Math.round(d.srcRate/100)/10} kHz · ${d.channels===1?'Mono':`${d.channels} ch`}`;
           $('#sourceAudio').src=makeUrl(pcmToWav(d.pcm));$('#outputFilename').value=`${safeStem(file.name)}-cleaned`;requestAnimationFrame(()=>drawWave($('#sourceWaveCanvas'),d.pcm));setPhase('ready');window.AppToast.show({message:t('decoded'),tone:'success'});
         }catch(e){if(gen!==state.generation)return;const key=['fileTooLarge','durationTooLong','decodeFailed'].find(k=>k===e?.message||t(k)===e?.message)||'decodeFailed';showError('#sourceError',t(key),key);setPhase(state.result?'result':state.sourcePcm?'ready':'error');}
+        finally{if(hadConfirmation&&gen===state.generation){const target=origin instanceof HTMLElement&&origin!==document.body&&origin.isConnected&&!origin.disabled?origin:$('#replaceButton');target?.focus({preventScroll:true});}}
       }
 
       async function ensureRuntime(){

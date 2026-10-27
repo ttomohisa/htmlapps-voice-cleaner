@@ -1,5 +1,7 @@
 # Changelog
 
+- Restore keyboard focus after audio replacement confirmation once source controls are enabled, including cancel and removed-origin fallback.
+
 ## Unreleased
 
 - Embed hash-pinned BrowserKittyUI 1.0.0 with tab-session retention, shared language preferences and native busy/disabled action states.
