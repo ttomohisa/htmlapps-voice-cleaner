@@ -461,7 +461,34 @@
     .drop-zone-icon svg { width: 25px; height: 25px; }
     .drop-zone h3 { margin: 0; font-size: 15px; }
     .drop-zone p { margin: 5px auto 13px; max-width: 560px; color: var(--muted); font-size: 12px; }
-    .file-fallback-button{display:none;width:100%;margin-top:10px;min-height:44px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer}@media (max-width:767px),(pointer:coarse) and (max-height:600px){.file-fallback-button{display:block}}.source-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .file-fallback-button {
+      display: none;
+      min-height: 44px;
+      margin-top: 2px;
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 3px;
+    }
+    .file-fallback-button:hover {
+      color: var(--text);
+      text-decoration-color: currentColor;
+    }
+    .file-fallback-button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+    @media (max-width: 767px), (pointer: coarse) and (max-height: 600px) {
+      .file-fallback-button { display: inline-flex; align-items: center; justify-content: center; }
+    }
+    .source-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
     .subtle-button { min-height: 38px; padding: 7px 12px; font-size: 12px; }
     .record-button.is-recording { border-color: var(--danger); color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); }
     .record-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 999px; background: currentColor; vertical-align: 1px; }
