@@ -97,7 +97,7 @@
       border-radius: 999px;
       color: var(--muted);
       background: var(--surface-muted);
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 650;
       vertical-align: 2px;
     }
@@ -186,13 +186,13 @@
       gap: 7px;
       flex: 0 0 auto;
       margin-top: 3px;
-      padding: 7px 10px;
-      border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
-      border-radius: 999px;
+      padding: 7px 0;
+      border: 0;
+      border-radius: 0;
       color: var(--accent);
-      background: var(--accent-soft);
+      background: transparent;
       font-size: 12px;
-      font-weight: 700;
+      font-weight: 500;
       white-space: nowrap;
     }
     .local-badge svg { width: 15px; height: 15px; display: block; }
@@ -333,6 +333,18 @@
       border-bottom: 1px solid var(--line);
     }
     .app-confirm-title { margin: 0; font-size: 17px; letter-spacing: -.01em; }
+    .dialog-close {
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      cursor: pointer;
+    }
+    .dialog-close svg { width: 18px; height: 18px; }
     .app-confirm-close {
       display: grid;
       place-items: center;
@@ -449,6 +461,33 @@
     .drop-zone-icon svg { width: 25px; height: 25px; }
     .drop-zone h3 { margin: 0; font-size: 15px; }
     .drop-zone p { margin: 5px auto 13px; max-width: 560px; color: var(--muted); font-size: 12px; }
+    .file-fallback-button {
+      display: none;
+      min-height: 44px;
+      margin-top: 2px;
+      padding: 8px 12px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: transparent;
+      text-underline-offset: 3px;
+    }
+    .file-fallback-button:hover {
+      color: var(--text);
+      text-decoration-color: currentColor;
+    }
+    .file-fallback-button:focus-visible {
+      outline: 2px solid var(--focus);
+      outline-offset: 2px;
+    }
+    @media (max-width: 767px), (pointer: coarse) and (max-height: 600px) {
+      .file-fallback-button { display: inline-flex; align-items: center; justify-content: center; }
+    }
     .source-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
     .subtle-button { min-height: 38px; padding: 7px 12px; font-size: 12px; }
     .record-button.is-recording { border-color: var(--danger); color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); }
@@ -593,6 +632,8 @@
                 <button class="button subtle-button record-button" id="recordButton" type="button"><span class="record-dot" aria-hidden="true"></span><span id="recordButtonLabel" data-i18n="record">録音する</span></button>
               </div>
               <input id="fileInput" type="file" accept="audio/*,video/*,.wav,.mp3,.m4a,.aac,.ogg,.opus,.webm,.mp4" hidden>
+              <button class="file-fallback-button" id="fileFallbackButton" type="button" data-i18n="fileFallback">ファイルから選択</button>
+              <input id="fileFallbackInput" type="file" hidden>
             </div>
           </div>
 
@@ -692,7 +733,7 @@
 
   </main>
 
-  <footer><span id="footerName">Voice Cleaner</span> · <span data-i18n="footer">完全ローカル処理</span></footer>
+  <footer><span id="footerName">Voice Cleaner</span> · MIT License · <span data-i18n="footer">音声のクリーニングはブラウザー内で完結</span></footer>
   <div class="app-toast" id="appToast" role="status" aria-live="polite" aria-atomic="true" data-tone="default">
     <span class="app-toast-message" id="appToastMessage"></span>
     <button class="app-toast-action" id="appToastAction" type="button" hidden></button>
@@ -702,8 +743,8 @@
   <dialog class="app-confirm-dialog" id="appConfirmDialog" aria-labelledby="appConfirmTitle" aria-describedby="appConfirmMessage">
     <div class="app-confirm-header">
       <h2 class="app-confirm-title" id="appConfirmTitle">確認</h2>
-      <button class="app-confirm-close" id="appConfirmClose" type="button" data-i18n-aria-label="close" aria-label="閉じる">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      <button class="dialog-close" id="appConfirmClose" type="button" data-i18n-aria-label="close" aria-label="閉じる">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12"/><path d="M18 6 6 18"/></svg>
       </button>
     </div>
     <div class="app-confirm-body">
@@ -718,8 +759,8 @@
   <dialog id="helpDialog" aria-labelledby="helpTitle">
     <div class="dialog-header">
       <h2 id="helpTitle" data-i18n="helpTitle">使い方と注意事項</h2>
-      <button class="icon-button" id="closeHelpButton" type="button" data-i18n-title="close" data-i18n-aria-label="close" title="閉じる" aria-label="閉じる">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="m7 7 10 10M17 7 7 17"/></svg>
+      <button class="dialog-close" id="closeHelpButton" type="button" data-i18n-title="close" data-i18n-aria-label="close" title="閉じる" aria-label="閉じる">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12"/><path d="M18 6 6 18"/></svg>
       </button>
     </div>
     <div class="dialog-body">
@@ -798,11 +839,11 @@
         ja: {
           brandMeta:'背景ノイズを軽減 · Before / After比較', helpTitle:'使い方と注意事項', close:'閉じる',
           introTitle:'録音の背景ノイズを軽減', lead:'音声や動画の声を聞き取りやすくします。処理はブラウザー内だけで完結します。', localBadge:'完全ローカル処理',
-          sourceTitle:'音声を選ぶ', sourceDesc:'音声または動画を読み込みます。対応形式はブラウザーによって異なります。', dropTitle:'音声・動画をここにドロップ', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 など。ファイルは外部へ送信されません。', chooseFile:'ファイルを選択', record:'録音する', stopRecording:'録音を停止', replace:'変更', originalWave:'元の音声', previewPositionHint:'波形をクリック・タップ・ドラッグして再生位置を変更できます。10秒プレビューはその位置から開始します。', sourceSeekLabel:'元音声の再生位置', beforeSeekLabel:'比較する元音声の再生位置', afterSeekLabel:'処理後の再生位置',
+          sourceTitle:'音声を選ぶ', sourceDesc:'音声または動画を読み込みます。対応形式はブラウザーによって異なります。', dropTitle:'音声・動画をここにドロップ', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 など。ファイルは外部へ送信されません。', chooseFile:'ファイルを選択',fileFallback:'ファイルから選択', record:'録音する', stopRecording:'録音を停止', replace:'変更', originalWave:'元の音声', previewPositionHint:'波形をクリック・タップ・ドラッグして再生位置を変更できます。10秒プレビューはその位置から開始します。', sourceSeekLabel:'元音声の再生位置', beforeSeekLabel:'比較する元音声の再生位置', afterSeekLabel:'処理後の再生位置',
           processTitle:'ノイズを軽減', processDesc:'設定は不要です。まず10秒だけ試して、良ければ全体を処理できます。', tryTen:'現在位置から10秒試す', tryTenCaption:'短い範囲でBefore / Afterを確認', cleanAll:'ファイル全体をきれいにする', cleanAllCaption:'GTCRNで音声全体の背景ノイズを軽減', monoNote:'処理時に16 kHz・モノラルへ変換します。声を中心とした録音向けです。', cancelProcess:'キャンセル', loadingRuntime:'処理エンジンを準備しています', processingPreview:'10秒プレビューを処理しています', processingAll:'ファイル全体を処理しています',
           resultTitle:'処理結果', before:'元の音声', after:'処理後', previewResult:'10秒プレビュー', fullResult:'ファイル全体', outputFilename:'出力ファイル名', outputFilenameHint:'拡張子は自動で .wav が付きます', saveWav:'WAVで保存', outputNote:'保存される音声は16 kHz・モノラルのPCM WAVです。',
           aboutTitle:'このツールでできること', aboutLead:'録音の声を聞き取りやすくするための軽量なノイズ低減です。', noiseCardTitle:'背景ノイズを軽減', noiseCardBody:'エアコン、ファン、サー音など、声に重なる背景ノイズの低減に向いています。', privacyCardTitle:'完全ローカル処理', privacyCardBody:'ファイル、録音、処理結果はサーバーへ送信されません。モデルも配布HTMLに内包されます。', limitCardTitle:'万能な音声修復ではありません', limitCardBody:'他人の声、音楽、強い反響、突然の大音量は十分に除去できない場合があります。',
-          buildInfo:'技術情報', modelLabel:'モデル', appVersion:'アプリバージョン', dependencies:'内包依存数', footer:'完全ローカル処理',
+          buildInfo:'技術情報', modelLabel:'モデル', appVersion:'アプリバージョン', dependencies:'内包依存数', footer:'音声のクリーニングはブラウザー内で完結',
           helpBasicsTitle:'基本操作', helpStep1:'音声または動画を選びます。必要ならブラウザーで直接録音できます。', helpStep2:'波形上のシークバーを動かして位置を選び、「現在位置から10秒試す」で確認します。良ければ全体を処理します。', helpStep3:'処理後は同じ再生位置のまま元音声と処理後を切り替えて確認し、WAVで保存します。', helpPrivacyTitle:'プライバシー', helpPrivacyBody:'音声ファイル、録音内容、処理結果はブラウザー内だけで扱われ、このアプリから外部へ送信されません。実行時通信もCSPで遮断しています。', helpNotesTitle:'注意事項', helpNoteFormat:'読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。', helpNoteOutput:'処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。', helpNoteLimits:'他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。', helpNoteMic:'マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。', helpModelTitle:'使用モデル', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。', helpOffline:'配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。',
           mobileFile:'音声', mobileClean:'ノイズ軽減', mobileSave:'保存', saved:'WAVを保存しました', cancelled:'処理をキャンセルしました', decoded:'音声を読み込みました', recordingStarted:'録音を開始しました', recordingStopped:'録音を停止しました',
           fileTooLarge:'ファイルが大きすぎます。250 MB以下のファイルを選んでください。', durationTooLong:'60分を超える音声には対応していません。', decodeFailed:'このファイルを音声として読み込めませんでした。別の形式を試してください。', runtimeFailed:'ノイズ低減エンジンを開始できませんでした。WebAssembly SIMD対応ブラウザーでお試しください。', processFailed:'ノイズ低減処理に失敗しました。', micUnavailable:'このブラウザーではマイク録音を利用できません。', micDenied:'マイクを開始できませんでした。権限やHTTPS/localhostでの利用を確認してください。'
@@ -810,11 +851,11 @@
         en: {
           brandMeta:'Reduce background noise · Before / After comparison', helpTitle:'How to use & notes', close:'Close',
           introTitle:'Reduce background noise in recordings', lead:'Make speech in audio and video easier to hear. Processing stays entirely in your browser.', localBadge:'Fully local processing',
-          sourceTitle:'Choose audio', sourceDesc:'Load an audio or video file. Supported formats depend on your browser.', dropTitle:'Drop audio or video here', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 and more. Files are never uploaded.', chooseFile:'Choose file', record:'Record', stopRecording:'Stop recording', replace:'Change', originalWave:'Original audio', previewPositionHint:'Click, tap, or drag the waveform to seek. The 10-second preview starts there.', sourceSeekLabel:'Original audio seek position', beforeSeekLabel:'Comparison original audio seek position', afterSeekLabel:'Cleaned audio seek position',
+          sourceTitle:'Choose audio', sourceDesc:'Load an audio or video file. Supported formats depend on your browser.', dropTitle:'Drop audio or video here', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 and more. Files are never uploaded.', chooseFile:'Choose file',fileFallback:'Choose from files', record:'Record', stopRecording:'Stop recording', replace:'Change', originalWave:'Original audio', previewPositionHint:'Click, tap, or drag the waveform to seek. The 10-second preview starts there.', sourceSeekLabel:'Original audio seek position', beforeSeekLabel:'Comparison original audio seek position', afterSeekLabel:'Cleaned audio seek position',
           processTitle:'Reduce noise', processDesc:'No tuning required. Try 10 seconds first, then process the whole file if it sounds good.', tryTen:'Try 10 seconds from here', tryTenCaption:'Compare a short Before / After sample', cleanAll:'Clean the whole file', cleanAllCaption:'Reduce background noise across the file with GTCRN', monoNote:'Processing converts audio to 16 kHz mono. It is designed mainly for spoken recordings.', cancelProcess:'Cancel', loadingRuntime:'Preparing the processing engine', processingPreview:'Processing 10-second preview', processingAll:'Processing the whole file',
           resultTitle:'Result', before:'Original', after:'Cleaned', previewResult:'10-second preview', fullResult:'Whole file', outputFilename:'Output filename', outputFilenameHint:'The .wav extension is added automatically', saveWav:'Save WAV', outputNote:'Saved audio is 16 kHz mono PCM WAV.',
           aboutTitle:'What this tool does', aboutLead:'Lightweight noise reduction focused on making recorded speech easier to hear.', noiseCardTitle:'Reduce background noise', noiseCardBody:'Works best on background noise such as fans, air conditioning, and steady hiss behind speech.', privacyCardTitle:'Fully local', privacyCardBody:'Files, recordings, and results are not sent to a server. The model is embedded in the distributable HTML.', limitCardTitle:'Not universal audio restoration', limitCardBody:'Other voices, music, strong reverb, and sudden loud sounds may not be removed well.',
-          buildInfo:'Technical information', modelLabel:'Model', appVersion:'App version', dependencies:'Embedded dependencies', footer:'Fully local processing',
+          buildInfo:'Technical information', modelLabel:'Model', appVersion:'App version', dependencies:'Embedded dependencies', footer:'Voice cleaning stays in the browser',
           helpBasicsTitle:'Basics', helpStep1:'Choose an audio or video file, or record directly in the browser when microphone access is available.', helpStep2:'Move the seek bar on the waveform, try 10 seconds there, and process the whole file if you like the result.', helpStep3:'Switch between original and cleaned audio at the same playback position, then save the result as WAV.', helpPrivacyTitle:'Privacy', helpPrivacyBody:'Audio files, recordings, and results stay in the browser and are not sent outside this app. CSP also blocks runtime network access.', helpNotesTitle:'Notes', helpNoteFormat:'Readable formats depend on your browser audio decoder. Unsupported codecs or containers cannot be loaded.', helpNoteOutput:'Audio is converted to 16 kHz mono for processing. This tool targets intelligible speech rather than high-fidelity music conversion.', helpNoteLimits:'Other voices, music, strong reverberation, and transient noise may remain. Listen to important output after saving.', helpNoteMic:'Microphone recording depends on browser permissions and secure-context rules. If file:// is blocked, use HTTPS or localhost.', helpModelTitle:'Model', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) runs locally through WebAssembly.', helpOffline:'The distributable HTML embeds the required code and WASM and does not need a network connection while processing.',
           mobileFile:'Audio', mobileClean:'Clean', mobileSave:'Save', saved:'WAV saved', cancelled:'Processing cancelled', decoded:'Audio loaded', recordingStarted:'Recording started', recordingStopped:'Recording stopped',
           fileTooLarge:'The file is too large. Choose a file under 250 MB.', durationTooLong:'Audio longer than 60 minutes is not supported.', decodeFailed:'This file could not be decoded as audio. Try another format.', runtimeFailed:'Could not start the noise-reduction engine. Try a browser with WebAssembly SIMD support.', processFailed:'Noise reduction failed.', micUnavailable:'Microphone recording is not available in this browser.', micDenied:'Could not start the microphone. Check permission and HTTPS/localhost requirements.'
@@ -1010,7 +1051,7 @@
         catch(e){showError('#sourceError',t('micDenied')); recorderStream?.getTracks().forEach(tr=>tr.stop()); recorderStream=null;recording=false;}
       }
 
-      $('#chooseFileButton').addEventListener('click',()=>$('#fileInput').click()); $('#replaceButton').addEventListener('click',()=>$('#fileInput').click()); $('#fileInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});
+      $('#chooseFileButton').addEventListener('click',()=>$('#fileInput').click()); $('#replaceButton').addEventListener('click',()=>$('#fileInput').click()); $('#fileInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});$('#fileFallbackButton').addEventListener('click',()=>$('#fileFallbackInput').click());$('#fileFallbackInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});
       const drop=$('#dropZone'); ['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('is-over');})); ['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('is-over');})); drop.addEventListener('drop',e=>{const f=e.dataTransfer?.files?.[0];if(f)loadSource(f);});
       $('#recordButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
       $('#mobileSourceButton').addEventListener('click',()=>$('#sourceSection').scrollIntoView({behavior:'smooth',block:'start'})); $('#mobileProcessButton').addEventListener('click',()=>runDenoise('full')); $('#mobileSaveButton').addEventListener('click',saveResult);
