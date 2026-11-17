@@ -574,10 +574,11 @@
       .app-mobile-bottom-item svg { width: 21px; height: 21px; }
       .app-mobile-bottom-item.primary:not(:disabled) { color: var(--accent); background: var(--accent-soft); }
       .app-mobile-bottom-item:disabled { opacity: .36; cursor: default; background: transparent; }
-      #previewButton:not(:disabled) { border-color: var(--accent); background: var(--accent); color: #fff; }
-      #previewButton:not(:disabled) .action-caption { color: rgba(255,255,255,.84); }
-      #processButton { border-color: var(--line); background: var(--surface); color: var(--text); }
-      #processButton .action-caption { color: var(--muted); }
+      /* Whole-file cleanup is the primary task; the short preview is optional. */
+      #processButton { order: -1; }
+      #previewButton { border-color: var(--line); background: var(--surface); color: var(--text); }
+      #previewButton .action-caption { color: var(--muted); }
+      #previewButton:hover:not(:disabled) { border-color: var(--line-strong); background: var(--surface-hover); }
       .app-mobile-bottom-bar.is-processing .app-mobile-bottom-item { display: none; }
       .app-mobile-processing { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 10px; min-height: 54px; }
       .app-mobile-progress-main { min-width: 0; display: grid; gap: 7px; }
