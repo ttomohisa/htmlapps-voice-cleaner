@@ -33,6 +33,12 @@ if(file==='dist/index.html'&&[320,393].includes(width)){
   assert.ok(card.scroll<=card.client+1,label+': source card must not overflow '+JSON.stringify(card));
   const filename=await page.locator('#sourceName').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,overflow:getComputedStyle(el).textOverflow}));
   assert.ok(filename.scroll>filename.client&&filename.overflow==='ellipsis',label+': long filename should truncate inside its card '+JSON.stringify(filename));
+  assert.match(await page.locator('#sourceMeta').textContent(),language==='ja'?/モノラル/:/Mono/,label+': source channels localized');
+  assert.equal(await page.locator('#appMobileBottomBar').getAttribute('aria-label'),language==='ja'?'スマホの操作':'Mobile actions');
+  const originalLang=language;
+  await page.locator('#languageButton').click();
+  assert.match(await page.locator('#sourceMeta').textContent(),originalLang==='ja'?/Mono/:/モノラル/,label+': changing language updates loaded audio metadata');
+  await page.locator('#languageButton').click();
 }
 if(cfg.nav){assert.equal(await page.locator(cfg.nav).isVisible(),width<=cfg.bp,label+': functional navigation');if(width<=cfg.bp)await bounds(page.locator(cfg.nav),width,height,label);}
 for(const w of [cfg.bp+1,cfg.bp,width]){await page.setViewportSize({width:w,height});assert.equal(await page.locator('body > footer').isVisible(),w>cfg.bp,label+': footer resize');}
