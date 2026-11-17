@@ -38,6 +38,12 @@ jobs:
         shell: pwsh
         run: ./scripts/check-repository.ps1
 
+      - name: Audio workflow regression tests
+        shell: pwsh
+        run: |
+          node --test tests/mobile-help-footer.test.cjs tests/audio-state-regression.test.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Audio workflow regressions failed.' }
+
       - name: Browser audio-processing smoke test
         shell: pwsh
         run: |
