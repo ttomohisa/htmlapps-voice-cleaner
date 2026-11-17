@@ -60,7 +60,9 @@ The normal HTML build does not require Python or Node.js. It uses Windows PowerS
 4. **Process the entire recording** — If the result sounds useful, run “Clean the whole file.” Progress is displayed, and the operation can be cancelled.
 5. **Compare and save** — Switch between Original and Cleaned, seeking either result waveform to move both playheads. Edit the output filename, then save the WAV.
 
-The 10-second preview is for listening. **WAV export becomes available after processing the whole recording.** GTCRN uses a fixed processing mode; there is no noise-reduction strength slider.
+The 10-second preview is for listening. **WAV export becomes available after processing the whole recording.** Later previews retain the last complete WAV for the current audio, and the save section identifies which result will be downloaded. GTCRN uses a fixed processing mode; there is no noise-reduction strength slider.
+
+When replacing audio, the app first verifies that the new file can be decoded, then asks for confirmation. Canceling or decode failure leaves the current audio, result, and output filename intact. Canceling a running job prevents delayed results from being applied.
 
 ### Waveform controls
 
@@ -72,7 +74,7 @@ The 10-second preview is for listening. **WAV export becomes available after pro
 | `Home` / `End` while focused | Seek to the beginning / end |
 | Seek either Before / After waveform | Synchronize the two result positions |
 
-On mobile, the bottom navigation provides Audio, Clean, and Save actions. Save stays disabled until there is a complete processed result.
+On mobile, the bottom navigation provides Audio, Clean, and Save actions. Save stays disabled until there is a complete processed result, which remains available after later previews.
 
 ## Single HTML and offline use
 
