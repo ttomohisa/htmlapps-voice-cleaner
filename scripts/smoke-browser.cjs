@@ -196,34 +196,34 @@ const server = http.createServer((req, res) => {
     const slowPage=await browser.newPage({viewport:{width:980,height:800}});
     try{
       await slowPage.addInitScript(()=>{
-        let assets;
-        Object.defineProperty(window,'StandaloneAssets',{
-          configurable:true,
-          get(){return assets;},
-          set(value){assets=new Proxy(value,{get(target,key){
-            if(key==='blobUrlAsync')return async(...args)=>{
-              await new Promise(resolve=>setTimeout(resolve,350));
-              return target.blobUrlAsync(...args);
-            };
-            return Reflect.get(target,key);
-          }});}
-        });
         window.__startedWorkers=0;
-        window.Worker=class{constructor(){window.__startedWorkers++;}postMessage(){}terminate(){}};
+        window.Worker=class{
+          constructor(){window.__startedWorkers++;}
+          postMessage(){} terminate(){}
+        };
       });
       await slowPage.goto(origin+'/index.html',{waitUntil:'load'});
       await slowPage.locator('#fileInput').setInputFiles({
         name:'engine-cancel.wav',mimeType:'audio/wav',buffer:pcmWav(1)
       });
       await slowPage.waitForFunction(()=>!document.querySelector('#processButton').disabled);
-      await slowPage.locator('#processButton').click();
-      await slowPage.waitForFunction(()=>!document.querySelector('#cancelButton').disabled);
-      await slowPage.locator('#cancelButton').click();
-      await slowPage.waitForTimeout(600);
-      assert.equal(await slowPage.evaluate(()=>window.__startedWorkers),0,
-        'Canceled engine initialization unexpectedly started a Worker');
+      // Dispatch both actions within one browser task, before the first runtime await can settle.
+      await slowPage.evaluate(()=>{
+        const run=document.querySelector('#processButton');
+        const cancel=document.querySelector('#cancelButton');
+        run.click();
+        if(cancel.disabled)throw new Error('Engine startup did not enable cancellation');
+        cancel.click();
+        if(run.disabled)throw new Error('Cancellation did not restore the action');
+        if(!document.querySelector('#resultSection').hidden)throw new Error('Canceled run exposed a result');
+        run.click();
+      });
+      await slowPage.waitForFunction(()=>window.__startedWorkers>=1,null,{timeout:45000});
+      // A late canceled startup must not start its own Worker in addition to the new run.
+      await slowPage.waitForTimeout(500);
+      assert.equal(await slowPage.evaluate(()=>window.__startedWorkers),1,
+        'Canceled engine startup began a stale Worker alongside the current run');
       assert.ok(await slowPage.locator('#resultSection').isHidden());
-      assert.ok(await slowPage.locator('#processButton').isEnabled());
       console.log('[PASS] Cancel during first-time engine preparation.');
     }finally{await slowPage.close();}
 
