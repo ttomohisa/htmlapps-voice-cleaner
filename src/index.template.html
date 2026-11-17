@@ -716,6 +716,7 @@
           <div class="export-box" id="exportBox">
             <label class="export-field" for="outputFilename"><span class="export-label" data-i18n="outputFilename">出力ファイル名</span><span class="filename-control"><input class="filename-input" id="outputFilename" type="text" maxlength="120" autocomplete="off" spellcheck="false" aria-describedby="outputFilenameHint"><span class="filename-extension" aria-hidden="true">.wav</span></span><span class="sr-only" id="outputFilenameHint" data-i18n="outputFilenameHint">拡張子は自動で .wav が付きます</span></label>
             <button class="button primary desktop-save-button" id="saveButton" type="button" data-i18n="saveWav">WAVで保存</button>
+            <p class="output-note" id="saveScope" aria-live="polite"></p>
             <p class="output-note" data-i18n="outputNote">保存される音声は16 kHz・モノラルのPCM WAVです。</p>
           </div>
         </div>
@@ -1024,28 +1025,98 @@
         };` }
 
       async function runDenoise(kind){
-        if(!state.sourcePcm||state.phase==='processing'||state.phase==='loading-runtime')return; clearErrors(); const gen=state.generation; let start=0,input;
-        if(kind==='preview'){ const desired=$('#sourceAudio').currentTime||0; start=Math.max(0,Math.min(state.duration,desired)); const a=Math.floor(start*SAMPLE_RATE), b=Math.min(state.sourcePcm.length,a+10*SAMPLE_RATE); input=state.sourcePcm.slice(a,b); start=a/SAMPLE_RATE; }
-        else input=state.sourcePcm.slice();
-        if(!input.length)return;
+        if(!state.sourcePcm||recording||['loading-source','loading-runtime','processing'].includes(state.phase))return;
+        clearErrors();
+        const gen=state.generation, runId=++state.runId;
+        const isCurrent=()=>gen===state.generation&&runId===state.runId;
+        let start=0,input,worker=null;
+        if(kind==='preview'){
+          const desired=$('#sourceAudio').currentTime||0;
+          start=Math.max(0,Math.min(state.duration,desired));
+          const a=Math.floor(start*SAMPLE_RATE),b=Math.min(state.sourcePcm.length,a+10*SAMPLE_RATE);
+          input=state.sourcePcm.slice(a,b);start=a/SAMPLE_RATE;
+        }else input=state.sourcePcm.slice();
+        const totalSamples=input.length; // Transferring the buffer detaches input.
+        if(!totalSamples)return;
         try{
-          setPhase('loading-runtime'); setProgress(true,t('loadingRuntime'),2,'GTCRN · WebAssembly'); await ensureRuntime(); if(gen!==state.generation)return;
-          setPhase('processing'); setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),4,`${formatTime(input.length/SAMPLE_RATE)}`);
-          const workerUrl=URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'})); const worker=new Worker(workerUrl,{type:'module'}); URL.revokeObjectURL(workerUrl); state.worker=worker;
-          worker.onmessage=(event)=>{ if(gen!==state.generation)return; const d=event.data; if(d.type==='progress'){setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),5+d.value*94,`${formatTime(Math.min(input.length,d.value*input.length)/SAMPLE_RATE)} / ${formatTime(input.length/SAMPLE_RATE)}`);} else if(d.type==='done'){ const out=new Float32Array(d.buffer); worker.terminate(); if(state.worker===worker)state.worker=null; setProgress(false); commitResult(kind,start,out); setPhase('result'); } else if(d.type==='error'){console.error('[Voice Cleaner] GTCRN inference failed:', d.message || 'unknown error');worker.terminate();if(state.worker===worker)state.worker=null;setProgress(false);showError('#processError',t('processFailed'));setPhase('ready');} };
-          worker.onerror=(event)=>{console.error('[Voice Cleaner] Worker startup failed:', event.message || event.type);worker.terminate();if(state.worker===worker)state.worker=null;setProgress(false);showError('#processError',t('runtimeFailed'));setPhase('ready');};
-          const wasmCopy=state.wasmBytes.slice(); worker.postMessage({type:'process',moduleUrl:state.runtimeUrl,wasmBuffer:wasmCopy.buffer,pcmBuffer:input.buffer},[wasmCopy.buffer,input.buffer]);
-        } catch(e){ console.error('[Voice Cleaner] Audio processing setup failed:', e); if(gen!==state.generation)return; setProgress(false);showError('#processError',e?.message||t('runtimeFailed'));setPhase('ready'); }
+          setPhase('loading-runtime');
+          setProgress(true,t('loadingRuntime'),2,'GTCRN · WebAssembly');
+          await ensureRuntime();
+          if(!isCurrent())return;
+          setPhase('processing');
+          setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),4,formatTime(totalSamples/SAMPLE_RATE));
+          const workerUrl=URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'}));
+          try { worker=new Worker(workerUrl,{type:'module'}); }
+          finally { URL.revokeObjectURL(workerUrl); }
+          state.worker=worker;
+          worker.onmessage=(event)=>{
+            if(!isCurrent()||state.worker!==worker)return;
+            const d=event.data;
+            if(d.type==='progress'){
+              setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),5+d.value*94,`${formatTime(Math.min(totalSamples,d.value*totalSamples)/SAMPLE_RATE)} / ${formatTime(totalSamples/SAMPLE_RATE)}`);
+            }else if(d.type==='done'){
+              worker.terminate();state.worker=null;setProgress(false);
+              try{commitResult(kind,start,new Float32Array(d.buffer));setPhase('result');}
+              catch(error){console.error('[Voice Cleaner] Could not prepare the audio result:',error);showError('#processError',t('processFailed'));setPhase('ready');}
+            }else if(d.type==='error'){
+              console.error('[Voice Cleaner] GTCRN inference failed:',d.message||'unknown error');
+              worker.terminate();state.worker=null;setProgress(false);
+              showError('#processError',t('processFailed'));setPhase('ready');
+            }
+          };
+          worker.onerror=(event)=>{
+            if(!isCurrent()||state.worker!==worker)return;
+            console.error('[Voice Cleaner] Worker startup failed:',event.message||event.type);
+            worker.terminate();state.worker=null;setProgress(false);
+            showError('#processError',t('runtimeFailed'));setPhase('ready');
+          };
+          const wasmCopy=state.wasmBytes.slice();
+          worker.postMessage({type:'process',moduleUrl:state.runtimeUrl,wasmBuffer:wasmCopy.buffer,pcmBuffer:input.buffer},[wasmCopy.buffer,input.buffer]);
+        }catch(error){
+          if(worker){worker.terminate();if(state.worker===worker)state.worker=null;}
+          if(!isCurrent())return;
+          console.error('[Voice Cleaner] Audio processing setup failed:',error);
+          setProgress(false);showError('#processError',t('runtimeFailed'));setPhase('ready');
+        }
       }
 
       function getResultOriginal(){ if(!state.result)return null; if(state.resultKind==='full')return state.sourcePcm; const a=Math.round(state.resultStart*SAMPLE_RATE);return state.sourcePcm.slice(a,a+state.result.length); }
       function commitResult(kind,start,output){
-        revokeResultUrls(); state.result=output;state.resultKind=kind;state.resultStart=start; const original=getResultOriginal(); const originalUrl=makeUrl(pcmToWav(original),'result'), cleanUrl=makeUrl(pcmToWav(output),'result'); $('#resultAudio').dataset.originalUrl=originalUrl;$('#resultAudio').dataset.cleanedUrl=cleanUrl;$('#resultAudio').src=originalUrl;$('#originalToggle').classList.add('is-active');$('#cleanedToggle').classList.remove('is-active');$('#resultSection').hidden=false; updateResultLabels(); syncSeekGroup(seekGroups[1],0); requestAnimationFrame(()=>{drawWave($('#beforeWaveCanvas'),original);drawWave($('#afterWaveCanvas'),output);$('#resultSection').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});});
+        // Create new playback URLs before touching the last successful result.
+        const a=Math.round(start*SAMPLE_RATE);
+        const original=kind==='full'?state.sourcePcm:state.sourcePcm.slice(a,a+output.length);
+        const originalUrl=URL.createObjectURL(pcmToWav(original));
+        let cleanUrl;
+        try{cleanUrl=URL.createObjectURL(pcmToWav(output));}
+        catch(error){URL.revokeObjectURL(originalUrl);throw error;}
+        const audio=$('#resultAudio');audio.pause();audio.removeAttribute('src');audio.load();
+        revokeResultUrls();
+        state.resultUrls.add(originalUrl);state.resultUrls.add(cleanUrl);
+        state.result=output;state.resultKind=kind;state.resultStart=start;
+        if(kind==='full')state.fullResult=output;
+        audio.dataset.originalUrl=originalUrl;audio.dataset.cleanedUrl=cleanUrl;
+        audio.src=originalUrl;
+        $('#originalToggle').classList.add('is-active');$('#cleanedToggle').classList.remove('is-active');
+        $('#resultSection').hidden=false;
+        updateResultLabels();syncSeekGroup(seekGroups[1],0);
+        requestAnimationFrame(()=>{
+          drawWave($('#beforeWaveCanvas'),original);drawWave($('#afterWaveCanvas'),output);
+          $('#resultSection').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+        });
       }
-      function updateResultLabels(){ if(!state.result)return; const dur=state.result.length/SAMPLE_RATE; $('#resultSubtitle').textContent=state.resultKind==='full'?t('fullResult'):t('previewResult'); $('#resultContext').textContent=state.resultKind==='full'?`${t('fullResult')} · ${formatTime(dur)} · 16 kHz · Mono`:`${t('previewResult')} · ${formatTime(state.resultStart)} – ${formatTime(state.resultStart+dur)}`; }
+      function updateResultLabels(){
+        if(!state.result)return;
+        const dur=state.result.length/SAMPLE_RATE;
+        $('#resultSubtitle').textContent=state.resultKind==='full'?t('fullResult'):t('previewResult');
+        $('#resultContext').textContent=state.resultKind==='full'
+          ? `${t('fullResult')} · ${formatTime(dur)} · 16 kHz · Mono`
+          : `${t('previewResult')} · ${formatTime(state.resultStart)} – ${formatTime(state.resultStart+dur)}`;
+        $('#saveScope').textContent=!state.fullResult?t('previewNotSaveable')
+          : state.resultKind==='preview'?t('savePreviousFull'):t('saveCurrentFull');
+      }
       async function switchResult(which){ const audio=$('#resultAudio'); if(!state.result)return; const time=audio.currentTime||0, playing=!audio.paused; const url=audio.dataset[which==='cleaned'?'cleanedUrl':'originalUrl']; if(audio.src===url)return; $('#originalToggle').classList.toggle('is-active',which==='original');$('#cleanedToggle').classList.toggle('is-active',which==='cleaned'); audio.dataset.pendingWaveSeek=String(time); audio.src=url; syncSeekGroup(seekGroups[1],time); try{await new Promise(resolve=>audio.addEventListener('loadedmetadata',resolve,{once:true}));seekGroupTo(seekGroups[1],time);if(playing)await audio.play();}catch{} }
-      function saveResult(){ if(!state.result||state.resultKind!=='full')return; const blob=pcmToWav(state.result); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=outputName();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);window.AppToast.show({message:t('saved'),tone:'success'}); }
-      function stopProcessing(showToast=true){ if(state.worker){state.worker.terminate();state.worker=null;} if(state.phase==='processing'||state.phase==='loading-runtime'){setProgress(false);setPhase(state.sourcePcm?'ready':'empty');if(showToast)window.AppToast.show({message:t('cancelled')});} }
+      function saveResult(){ if(!state.fullResult)return; const blob=pcmToWav(state.fullResult); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=outputName();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);window.AppToast.show({message:t('saved'),tone:'success'}); }
+      function stopProcessing(showToast=true){ const active=state.phase==='processing'||state.phase==='loading-runtime'||Boolean(state.worker);state.runId++;if(state.worker){state.worker.terminate();state.worker=null;}if(active){setProgress(false);setPhase(state.sourcePcm?'ready':'empty');if(showToast)window.AppToast.show({message:t('cancelled')});} }
 
       async function toggleRecording(){
         if(recording){ recorder?.stop(); return; }
