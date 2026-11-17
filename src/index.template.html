@@ -551,18 +551,12 @@
     .export-box .export-field { min-width: 0; }
     .export-box .button { min-height: 42px; }
     .output-note { grid-column: 1 / -1; margin: -2px 0 0; color: var(--muted); font-size: 10px; }
-    .notice-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
-    .notice-card { padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-    .notice-card svg { width: 20px; height: 20px; color: var(--accent); }
-    .notice-card h3 { margin: 9px 0 4px; font-size: 12px; }
-    .notice-card p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
     .tiny-note { color: var(--muted); font-size: 10px; }
     .source-loading { padding: 10px 12px; color: var(--muted); font-size: 12px; }
     .async-error { display: none; padding: 11px 12px; border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line)); border-radius: 11px; background: color-mix(in srgb, var(--danger) 5%, var(--surface)); color: var(--danger); font-size: 11px; }
     .async-error.is-visible { display: block; }
     .app-mobile-bottom-bar { display: none; }
     @media (max-width: 720px) {
-      .notice-grid { grid-template-columns: 1fr; }
       .process-actions { grid-template-columns: 1fr; }
       .vc-panel-head { padding: 15px 14px 0; }
       .vc-panel-body { padding: 13px 14px 15px; }
@@ -572,6 +566,7 @@
       .output-note { grid-column: 1; }
     }
     @media (max-width: 600px) {
+      .local-badge { display: none; }
       body.has-mobile-bottom-bar { padding-bottom: calc(var(--app-mobile-bottom-bar-height) + env(safe-area-inset-bottom)); }
       .desktop-run-button, .desktop-save-button { display: none !important; }
       .app-mobile-bottom-bar { position: fixed; z-index: 80; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in srgb, var(--line) 82%, transparent); background: rgba(255,255,255,.94); box-shadow: 0 -8px 24px rgba(20,22,20,.06); backdrop-filter: blur(18px) saturate(1.35); }
@@ -609,8 +604,8 @@
   <main class="main">
     <section class="page-intro" aria-labelledby="heroTitle">
       <div>
-        <h2 id="heroTitle" data-i18n="introTitle">録音の背景ノイズを軽減</h2>
-        <p data-i18n="lead">音声や動画の声を聞き取りやすくします。処理はブラウザー内だけで完結します。</p>
+        <h2 id="heroTitle" data-i18n="introTitle">音声のノイズを減らす</h2>
+        <p data-i18n="lead">音声・動画の背景ノイズを減らして、WAVで保存します。</p>
       </div>
       <div class="local-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg>
@@ -724,14 +719,7 @@
         </div>
       </section>
 
-      <section class="section" aria-labelledby="aboutTitle">
-        <div class="section-head"><h2 class="section-title" id="aboutTitle" data-i18n="aboutTitle">このツールでできること</h2><p data-i18n="aboutLead">録音の声を聞き取りやすくするための軽量なノイズ低減です。</p></div>
-        <div class="notice-grid">
-          <article class="notice-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12h3l2-7 4 14 3-9 2 5h2"/></svg><h3 data-i18n="noiseCardTitle">背景ノイズを軽減</h3><p data-i18n="noiseCardBody">エアコン、ファン、サー音など、声に重なる背景ノイズの低減に向いています。</p></article>
-          <article class="notice-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg><h3 data-i18n="privacyCardTitle">完全ローカル処理</h3><p data-i18n="privacyCardBody">ファイル、録音、処理結果はサーバーへ送信されません。モデルも配布HTMLに内包されます。</p></article>
-          <article class="notice-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v10"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><h3 data-i18n="limitCardTitle">万能な音声修復ではありません</h3><p data-i18n="limitCardBody">他人の声、音楽、強い反響、突然の大音量は十分に除去できない場合があります。</p></article>
-        </div>
-      </section>
+
 
 
     </div>
@@ -844,11 +832,10 @@
       const translations = {
         ja: {
           brandMeta:'背景ノイズを軽減 · Before / After比較', helpTitle:'使い方と注意事項', close:'閉じる',
-          introTitle:'録音の背景ノイズを軽減', lead:'音声や動画の声を聞き取りやすくします。処理はブラウザー内だけで完結します。', localBadge:'完全ローカル処理',
+          introTitle:'音声のノイズを減らす', lead:'音声・動画の背景ノイズを減らして、WAVで保存します。', localBadge:'完全ローカル処理',
           sourceTitle:'音声を選ぶ', sourceDesc:'音声または動画を読み込みます。対応形式はブラウザーによって異なります。', dropTitle:'音声・動画をここにドロップ', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 など。ファイルは外部へ送信されません。', chooseFile:'ファイルを選択',fileFallback:'ファイルから選択', record:'録音する', stopRecording:'録音を停止', replace:'変更', originalWave:'元の音声', previewPositionHint:'波形をクリック・タップ・ドラッグして再生位置を変更できます。10秒プレビューはその位置から開始します。', sourceSeekLabel:'元音声の再生位置', beforeSeekLabel:'比較する元音声の再生位置', afterSeekLabel:'処理後の再生位置',
           processTitle:'ノイズを軽減', processDesc:'設定は不要です。まず10秒だけ試して、良ければ全体を処理できます。', tryTen:'現在位置から10秒試す', tryTenCaption:'短い範囲でBefore / Afterを確認', cleanAll:'ファイル全体をきれいにする', cleanAllCaption:'GTCRNで音声全体の背景ノイズを軽減', monoNote:'処理時に16 kHz・モノラルへ変換します。声を中心とした録音向けです。', cancelProcess:'キャンセル', loadingRuntime:'処理エンジンを準備しています', processingPreview:'10秒プレビューを処理しています', processingAll:'ファイル全体を処理しています',
           resultTitle:'処理結果', before:'元の音声', after:'処理後', previewResult:'10秒プレビュー', fullResult:'ファイル全体', outputFilename:'出力ファイル名', outputFilenameHint:'拡張子は自動で .wav が付きます', saveWav:'WAVで保存', outputNote:'保存される音声は16 kHz・モノラルのPCM WAVです。',
-          aboutTitle:'このツールでできること', aboutLead:'録音の声を聞き取りやすくするための軽量なノイズ低減です。', noiseCardTitle:'背景ノイズを軽減', noiseCardBody:'エアコン、ファン、サー音など、声に重なる背景ノイズの低減に向いています。', privacyCardTitle:'完全ローカル処理', privacyCardBody:'ファイル、録音、処理結果はサーバーへ送信されません。モデルも配布HTMLに内包されます。', limitCardTitle:'万能な音声修復ではありません', limitCardBody:'他人の声、音楽、強い反響、突然の大音量は十分に除去できない場合があります。',
           buildInfo:'技術情報', modelLabel:'モデル', appVersion:'アプリバージョン', dependencies:'内包依存数', footer:'音声のクリーニングはブラウザー内で完結',
           helpBasicsTitle:'基本操作', helpStep1:'音声または動画を選びます。必要ならブラウザーで直接録音できます。', helpStep2:'波形上のシークバーを動かして位置を選び、「現在位置から10秒試す」で確認します。良ければ全体を処理します。', helpStep3:'処理後は同じ再生位置のまま元音声と処理後を切り替えて確認し、WAVで保存します。', helpPrivacyTitle:'プライバシー', helpPrivacyBody:'音声ファイル、録音内容、処理結果はブラウザー内だけで扱われ、このアプリから外部へ送信されません。実行時通信もCSPで遮断しています。', helpNotesTitle:'注意事項', helpNoteFormat:'読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。', helpNoteOutput:'処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。', helpNoteLimits:'他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。', helpNoteMic:'マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。', helpModelTitle:'使用モデル', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。', helpOffline:'配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。',
           mobileFile:'音声', mobileClean:'ノイズ軽減', mobileSave:'保存', saved:'WAVのダウンロードを開始しました', cancelled:'処理をキャンセルしました', decoded:'音声を読み込みました', recordingStarted:'録音を開始しました', recordingStopped:'録音を停止しました',
@@ -858,11 +845,10 @@
         },
         en: {
           brandMeta:'Reduce background noise · Before / After comparison', helpTitle:'How to use & notes', close:'Close',
-          introTitle:'Reduce background noise in recordings', lead:'Make speech in audio and video easier to hear. Processing stays entirely in your browser.', localBadge:'Fully local processing',
+          introTitle:'Reduce noise in audio recordings', lead:'Reduce background noise in audio or video, then save as WAV.', localBadge:'Fully local processing',
           sourceTitle:'Choose audio', sourceDesc:'Load an audio or video file. Supported formats depend on your browser.', dropTitle:'Drop audio or video here', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 and more. Files are never uploaded.', chooseFile:'Choose file',fileFallback:'Choose from files', record:'Record', stopRecording:'Stop recording', replace:'Change', originalWave:'Original audio', previewPositionHint:'Click, tap, or drag the waveform to seek. The 10-second preview starts there.', sourceSeekLabel:'Original audio seek position', beforeSeekLabel:'Comparison original audio seek position', afterSeekLabel:'Cleaned audio seek position',
           processTitle:'Reduce noise', processDesc:'No tuning required. Try 10 seconds first, then process the whole file if it sounds good.', tryTen:'Try 10 seconds from here', tryTenCaption:'Compare a short Before / After sample', cleanAll:'Clean the whole file', cleanAllCaption:'Reduce background noise across the file with GTCRN', monoNote:'Processing converts audio to 16 kHz mono. It is designed mainly for spoken recordings.', cancelProcess:'Cancel', loadingRuntime:'Preparing the processing engine', processingPreview:'Processing 10-second preview', processingAll:'Processing the whole file',
           resultTitle:'Result', before:'Original', after:'Cleaned', previewResult:'10-second preview', fullResult:'Whole file', outputFilename:'Output filename', outputFilenameHint:'The .wav extension is added automatically', saveWav:'Save WAV', outputNote:'Saved audio is 16 kHz mono PCM WAV.',
-          aboutTitle:'What this tool does', aboutLead:'Lightweight noise reduction focused on making recorded speech easier to hear.', noiseCardTitle:'Reduce background noise', noiseCardBody:'Works best on background noise such as fans, air conditioning, and steady hiss behind speech.', privacyCardTitle:'Fully local', privacyCardBody:'Files, recordings, and results are not sent to a server. The model is embedded in the distributable HTML.', limitCardTitle:'Not universal audio restoration', limitCardBody:'Other voices, music, strong reverb, and sudden loud sounds may not be removed well.',
           buildInfo:'Technical information', modelLabel:'Model', appVersion:'App version', dependencies:'Embedded dependencies', footer:'Voice cleaning stays in the browser',
           helpBasicsTitle:'Basics', helpStep1:'Choose an audio or video file, or record directly in the browser when microphone access is available.', helpStep2:'Move the seek bar on the waveform, try 10 seconds there, and process the whole file if you like the result.', helpStep3:'Switch between original and cleaned audio at the same playback position, then save the result as WAV.', helpPrivacyTitle:'Privacy', helpPrivacyBody:'Audio files, recordings, and results stay in the browser and are not sent outside this app. CSP also blocks runtime network access.', helpNotesTitle:'Notes', helpNoteFormat:'Readable formats depend on your browser audio decoder. Unsupported codecs or containers cannot be loaded.', helpNoteOutput:'Audio is converted to 16 kHz mono for processing. This tool targets intelligible speech rather than high-fidelity music conversion.', helpNoteLimits:'Other voices, music, strong reverberation, and transient noise may remain. Listen to important output after saving.', helpNoteMic:'Microphone recording depends on browser permissions and secure-context rules. If file:// is blocked, use HTTPS or localhost.', helpModelTitle:'Model', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) runs locally through WebAssembly.', helpOffline:'The distributable HTML embeds the required code and WASM and does not need a network connection while processing.',
           mobileFile:'Audio', mobileClean:'Clean', mobileSave:'Save', saved:'WAV download started', cancelled:'Processing cancelled', decoded:'Audio loaded', recordingStarted:'Recording started', recordingStopped:'Recording stopped',
