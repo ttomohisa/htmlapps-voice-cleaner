@@ -204,6 +204,95 @@ const server = http.createServer((req, res) => {
     assert.ok(logs.every(line => !line.startsWith('unexpected external request:')), 'Runtime requested external network');
     console.log('[PASS] GTCRN/WAV, preview retention, replacement protection, stale Worker and offline checks.');
 
+    // Exercise the real GTCRN model on a public-domain recorded human voice,
+    // with deterministic fan/hiss overlay. This is an objective regression,
+    // not a subjective intelligibility or microphone quality assessment.
+    const voicePage=await browser.newPage({viewport:{width:980,height:780},acceptDownloads:true});
+    try{
+      const crypto=require('node:crypto');
+      const fixtureBase64=fs.readFileSync(path.resolve('tests/fixtures/jfk-public-domain.wav.base64'),'utf8');
+      const speechWav=Buffer.from(fixtureBase64,'base64');
+      assert.equal(crypto.createHash('sha256').update(speechWav).digest('hex'),
+        '59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e',
+        'Public-domain voice fixture was corrupted');
+      const readMono16=(buffer)=>{
+        assert.equal(buffer.toString('ascii',0,4),'RIFF');
+        assert.equal(buffer.toString('ascii',8,12),'WAVE');
+        assert.equal(buffer.readUInt16LE(20),1,'Fixture must be PCM');
+        assert.equal(buffer.readUInt16LE(22),1,'Fixture must be mono');
+        assert.equal(buffer.readUInt32LE(24),16000,'Fixture must be 16 kHz');
+        const dataStart=(()=>{
+          let pos=12;
+          while(pos+8<=buffer.length){
+            const size=buffer.readUInt32LE(pos+4);
+            if(buffer.toString('ascii',pos,pos+4)==='data')return {offset:pos+8,size};
+            pos+=8+size+(size%2);
+          }
+          throw new Error('Missing WAV data chunk');
+        })();
+        const len=dataStart.size/2;
+        assert.ok(len>16000*3 && dataStart.offset+dataStart.size<=buffer.length);
+        const pcm=new Float32Array(len);
+        for(let i=0;i<len;i++)pcm[i]=buffer.readInt16LE(dataStart.offset+i*2)/32768;
+        return pcm;
+      };
+      const reference=readMono16(speechWav);
+      const noisy=new Float32Array(reference.length);
+      let seed=13579;
+      for(let i=0;i<reference.length;i++){
+        seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+        const hiss=(seed/4294967296-.5)*.022;
+        const fan=.045*Math.sin(2*Math.PI*120*i/16000)+.015*Math.sin(2*Math.PI*1010*i/16000);
+        noisy[i]=Math.max(-.995,Math.min(.995,reference[i]*.72+fan+hiss));
+      }
+      const mixedWav=Buffer.alloc(44+noisy.length*2);
+      mixedWav.write('RIFF',0);mixedWav.writeUInt32LE(mixedWav.length-8,4);
+      mixedWav.write('WAVEfmt ',8);mixedWav.writeUInt32LE(16,16);
+      mixedWav.writeUInt16LE(1,20);mixedWav.writeUInt16LE(1,22);
+      mixedWav.writeUInt32LE(16000,24);mixedWav.writeUInt32LE(32000,28);
+      mixedWav.writeUInt16LE(2,32);mixedWav.writeUInt16LE(16,34);
+      mixedWav.write('data',36);mixedWav.writeUInt32LE(noisy.length*2,40);
+      for(let i=0;i<noisy.length;i++)mixedWav.writeInt16LE(Math.round(noisy[i]*32767),44+i*2);
+      await voicePage.goto(origin+'/index.html',{waitUntil:'load',timeout:20000});
+      await voicePage.locator('#fileInput').setInputFiles({
+        name:'recorded-speech-with-fan.wav',mimeType:'audio/wav',buffer:mixedWav
+      });
+      await voicePage.waitForFunction(()=>!document.querySelector('#processButton').disabled,null,{timeout:30000});
+      await voicePage.locator('#processButton').click();
+      await voicePage.waitForFunction(()=>!document.querySelector('#saveButton').disabled ||
+        document.querySelector('#processError').textContent.trim().length>0,null,{timeout:90000});
+      assert.equal(await voicePage.locator('#processError').textContent(),'','Voice sample denoising failed');
+      const saved=voicePage.waitForEvent('download',{timeout:15000});
+      await voicePage.locator('#saveButton').click();
+      const cleaned=readMono16(fs.readFileSync(await (await saved).path()));
+      assert.equal(cleaned.length,reference.length,'Voice sample must retain its duration');
+      const measure=(array,mask)=>{
+        let sum=0,peak=0,count=0;
+        const frameSize=640;
+        for(let start=0;start<array.length;start+=frameSize){
+          const end=Math.min(start+frameSize,array.length);
+          let refPower=0;
+          for(let i=start;i<end;i++)refPower+=reference[i]*reference[i];
+          const rms=Math.sqrt(refPower/(end-start));
+          if(mask==='speech' && rms<.035 || mask==='quiet' && rms>.012)continue;
+          for(let i=start;i<end;i++){const v=array[i];sum+=v*v;peak=Math.max(peak,Math.abs(v));count++;}
+        }
+        return {rms:Math.sqrt(sum/Math.max(1,count)),peak,count};
+      };
+      const speechInput=measure(noisy,'speech'),speechOutput=measure(cleaned,'speech');
+      const quietInput=measure(noisy,'quiet'),quietOutput=measure(cleaned,'quiet');
+      assert.ok(speechOutput.count>1000,'Recorded speech test needs active speech');
+      assert.ok(speechOutput.rms>.006,'Denoising unexpectedly removed recorded speech');
+      assert.ok(speechOutput.peak<=.999,'Denoised WAV has clipped peaks');
+      assert.ok(quietOutput.rms<quietInput.rms*1.5,'Noise-only portions must not become substantially louder');
+      console.log('[PASS] Recorded human speech and fan-noise GTCRN processing. Levels:',
+        JSON.stringify({
+          speechInputRms:speechInput.rms.toFixed(4),speechOutputRms:speechOutput.rms.toFixed(4),
+          fanInputRms:quietInput.rms.toFixed(4),fanOutputRms:quietOutput.rms.toFixed(4),
+          outputPeak:speechOutput.peak.toFixed(4)
+        }));
+    }finally{await voicePage.close();}
+
     // Delay first-time engine setup, then cancel before the Worker could begin.
     const slowPage=await browser.newPage({viewport:{width:980,height:800}});
     try{
