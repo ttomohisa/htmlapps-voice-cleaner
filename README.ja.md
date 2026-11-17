@@ -102,6 +102,10 @@ GitHub Pagesで公開されたHTMLを開けば、登録・インストールな�
 
 公開先は[https://ttomohisa.github.io/htmlapps-voice-cleaner/](https://ttomohisa.github.io/htmlapps-voice-cleaner/)を想定しています。PR内の変更は `main` へマージされるまでGitHub Pagesには反映されません。公開設定とデプロイが完了するまでは、上記URLが利用できない場合があります。
 
+## タグ・GitHub Releaseの自動作成
+
+PRを`main`へマージすると、GitHub Pagesのワークフローでビルド・音声処理テストを実行します。成功し、`app.config.json` のバージョンに対応するGitHub Releaseがまだ存在しない場合、`vX.Y.Z`タグとGitHub Releaseを自動作成します。読みやすい単一HTML、自己展開HTML、ZIP、SHA-256チェックサムを添付します。同じバージョンは重複リリースしません。別バージョンとして公開する場合は、マージ前に`app.config.json`のバージョンを更新してください。手動でワークフローを実行してもリリースは作成されません。
+
 ## 開発とビルド
 
 ```text
