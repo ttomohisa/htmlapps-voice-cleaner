@@ -1034,7 +1034,7 @@
       }
 
       function confirmAudioReplacement(){
-        const dialog=$('#appConfirmDialog'),cancel=$('#appConfirmCancel'),ok=$('#appConfirmOk');
+        const dialog=$('#appConfirmDialog'),cancel=$('#appConfirmCancel'),ok=$('#appConfirmOk'),close=$('#appConfirmClose');
         $('#appConfirmTitle').textContent=t('replaceConfirmTitle');
         $('#appConfirmMessage').textContent=t('replaceConfirmMessage');
         cancel.textContent=t('replaceCancel');
@@ -1043,6 +1043,7 @@
           let settled=false;
           const cleanup=()=>{
             cancel.removeEventListener('click',onCancel);
+            close.removeEventListener('click',onCancel);
             ok.removeEventListener('click',onAccept);
             dialog.removeEventListener('close',onClose);
             dialog.removeEventListener('click',onBackdrop);
@@ -1059,7 +1060,7 @@
             const rect=dialog.getBoundingClientRect();
             if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)finish(false);
           };
-          cancel.addEventListener('click',onCancel);ok.addEventListener('click',onAccept);
+          cancel.addEventListener('click',onCancel);close.addEventListener('click',onCancel);ok.addEventListener('click',onAccept);
           dialog.addEventListener('close',onClose);dialog.addEventListener('click',onBackdrop);
           dialog.showModal();cancel.focus();
         });
@@ -1159,7 +1160,10 @@
         if(kind==='preview'){
           const desired=$('#sourceAudio').currentTime||0;
           start=Math.max(0,Math.min(state.duration,desired));
-          const a=Math.floor(start*SAMPLE_RATE),b=Math.min(state.sourcePcm.length,a+10*SAMPLE_RATE);
+          let a=Math.min(state.sourcePcm.length,Math.floor(start*SAMPLE_RATE));
+          // When playback has ended, preview the final up-to-10 seconds instead of doing nothing.
+          if(a>=state.sourcePcm.length)a=Math.max(0,state.sourcePcm.length-10*SAMPLE_RATE);
+          const b=Math.min(state.sourcePcm.length,a+10*SAMPLE_RATE);
           input=state.sourcePcm.slice(a,b);start=a/SAMPLE_RATE;
         }else input=state.sourcePcm.slice();
         const totalSamples=input.length; // Transferring the buffer detaches input.
