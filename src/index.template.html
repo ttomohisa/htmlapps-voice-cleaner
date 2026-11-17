@@ -568,9 +568,8 @@
       .output-note { grid-column: 1; }
     }
     @media (max-width: 600px) {
-      /* The header stays in document flow: hiding it never shifts the form or fixed footer. */
-      .app-header { transition: transform .22s ease; }
-      .app-header.is-scroll-hidden { transform: translateY(calc(-100% - 2px)); }
+      /* On phones, show the header once at the top; scroll it with the document. */
+      .app-header { position: static; }
       .local-badge { display: none; }
       body.has-mobile-bottom-bar { padding-bottom: calc(var(--app-mobile-bottom-bar-height) + env(safe-area-inset-bottom)); }
       .desktop-save-button { display: none !important; }
@@ -597,9 +596,6 @@
     }
 
     @media (max-width: 600px) { body > footer { display: none; } }
-    @media (max-width: 600px) and (prefers-reduced-motion: reduce) {
-      .app-header { transition: none; }
-    }
     #helpDialog .help-build { margin-top:20px; padding-top:12px; border-top:1px solid var(--line); color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
     #helpDialog .help-build .build-grid { grid-template-columns:minmax(0,1fr); }
 </style>
@@ -1381,46 +1377,6 @@
           requestingMic=false;recording=false;setPhase(state.sourcePcm?'ready':'empty');
         }
       }
-
-      // Hide the sticky header while scrolling down on phones, and restore it on
-      // deliberate upward motion. Keep it visible near the top and for keyboard focus.
-      const phoneHeader=$('.app-header');
-      const phoneHeaderMedia=matchMedia('(max-width: 600px)');
-      let headerScrollY=Math.max(0,window.scrollY),headerScrollDirection=0,headerScrollTravel=0,headerScrollFrame=0;
-      function showPhoneHeader(){
-        phoneHeader.classList.remove('is-scroll-hidden');
-        headerScrollTravel=0;headerScrollDirection=0;
-      }
-      function updatePhoneHeader(){
-        headerScrollFrame=0;
-        const y=Math.max(0,window.scrollY),delta=y-headerScrollY;
-        headerScrollY=y;
-        const focused=phoneHeader.contains(document.activeElement)
-          && document.activeElement.matches?.(':focus-visible');
-        if(!phoneHeaderMedia.matches||y<=32||focused||document.querySelector('dialog[open]')){
-          showPhoneHeader();return;
-        }
-        // Ignore tiny browser-chrome and touch-scrolling movements.
-        if(Math.abs(delta)<2)return;
-        const direction=Math.sign(delta);
-        if(direction!==headerScrollDirection){headerScrollDirection=direction;headerScrollTravel=0;}
-        headerScrollTravel+=Math.abs(delta);
-        if(direction>0&&y>phoneHeader.offsetHeight+70&&headerScrollTravel>=35){
-          phoneHeader.classList.add('is-scroll-hidden');headerScrollTravel=0;
-        }else if(direction<0&&headerScrollTravel>=16){
-          showPhoneHeader();
-        }
-      }
-      function schedulePhoneHeader(){
-        if(!headerScrollFrame)headerScrollFrame=requestAnimationFrame(updatePhoneHeader);
-      }
-      window.addEventListener('scroll',schedulePhoneHeader,{passive:true});
-      window.addEventListener('resize',()=>{
-        if(!phoneHeaderMedia.matches)showPhoneHeader();
-        schedulePhoneHeader();
-      },{passive:true});
-      phoneHeader.addEventListener('focusin',showPhoneHeader);
-      window.addEventListener('pageshow',()=>{headerScrollY=Math.max(0,window.scrollY);showPhoneHeader();});
 
       $('#chooseFileButton').addEventListener('click',()=>$('#fileInput').click()); $('#replaceButton').addEventListener('click',()=>$('#fileInput').click()); $('#fileInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});$('#fileFallbackButton').addEventListener('click',()=>$('#fileFallbackInput').click());$('#fileFallbackInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});
       const drop=$('#dropZone'); ['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('is-over');})); ['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('is-over');})); drop.addEventListener('drop',e=>{const f=e.dataTransfer?.files?.[0];if(f)loadSource(f);});
