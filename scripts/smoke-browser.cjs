@@ -192,7 +192,7 @@ const server = http.createServer((req, res) => {
     assert.ok(await page.locator('#resultSection').isHidden(),'Cancel should keep the new source without results');
     assert.match(await page.locator('#mobileProcessLabel').textContent(),/Try 10 sec|10秒試す/);
     await page.locator('#mobileProcessButton').click();
-    await page.waitForFunction(()=>document.querySelector('#resultSubtitle').textContent.match(/10.second preview|10秒プレビュー/),null,{timeout:10000});
+    await page.waitForFunction(()=>!document.querySelector('#resultSection').hidden && document.querySelector('#resultSubtitle').textContent.match(/10.second preview|10秒プレビュー/) && document.querySelector('#mobileProcessing').hidden,null,{timeout:10000});
     assert.ok(await page.locator('#mobileSaveButton').isDisabled(),'Preview does not permit saving a partial WAV');
     assert.match(await page.locator('#mobileProcessLabel').textContent(),/Clean all|全体を処理/);
     await page.locator('#mobileProcessButton').click();
