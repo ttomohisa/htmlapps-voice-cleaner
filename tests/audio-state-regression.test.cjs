@@ -104,3 +104,20 @@ test('phone workflow starts with a preview and retains direct full processing',(
     assert.equal((html.match(new RegExp(key+':','g'))||[]).length,2,'Bilingual phone label '+key);
   }
 });
+
+
+test('release review: retake, dialog close, preview end, and restored audio state',()=>{
+  assert.match(html,/id="recordAgainButton"/);
+  assert.match(html,/id="recordAgainButtonLabel"/);
+  assert.match(html,/\$\('#recordAgainButton'\)\.addEventListener\('click',toggleRecording\)/);
+  assert.match(html,/close\.addEventListener\('click',onCancel\)/);
+  assert.match(html,/close\.removeEventListener\('click',onCancel\)/);
+  assert.match(html,/if\(a>=state\.sourcePcm\.length\)a=Math\.max\(0,state\.sourcePcm\.length-10\*SAMPLE_RATE\)/);
+  assert.match(html,/window\.addEventListener\('pagehide',event=>\{/);
+  assert.match(html,/if\(event\.persisted\)return/);
+  assert.match(html,/#processButton \{ order: -1; \}/);
+  assert.match(html,/id="processButton" type="button" disabled/);
+  for(const key of ['mobileActions','compareLabel','monoLabel']){
+    assert.equal((html.match(new RegExp(key+':','g'))||[]).length,2,'Bilingual locale '+key);
+  }
+});
