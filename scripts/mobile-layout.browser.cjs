@@ -21,7 +21,19 @@ if(await page.locator('html').getAttribute('lang')!==language)await page.locator
 assert.equal((await page.locator('[data-i18n="localBadge"]').textContent()).trim(),language==='ja'?'完全ローカル処理':'Fully local processing');assert.equal(await page.locator('.local-badge').isVisible(),width>cfg.bp,label+': phone local badge visibility');if(await page.locator('.local-badge').isVisible())await bounds(page.locator('.local-badge'),width,height,label,false);if(await page.locator('.local-badge').isVisible()){const text=await page.locator('.local-badge').evaluate(e=>{const r=document.createRange();r.selectNodeContents(e);const b=r.getBoundingClientRect();return{left:b.left,right:b.right,scroll:e.scrollWidth,client:e.clientWidth};});assert.ok(text.left>=-1&&text.right<=width+1&&text.scroll<=text.client+1,label+': actual privacy badge text '+JSON.stringify(text));}
 assert.equal(await page.locator('body > footer').isVisible(),width>cfg.bp,label+': informational footer');
 
-if(file==='dist/index.html'&&width===320){const samples=1600,wav=Buffer.alloc(44+samples*2);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(16000,24);wav.writeUInt32LE(32000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(samples*2,40);for(let i=0;i<samples;i++)wav.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*440/16000)*1000),44+i*2);await page.locator('#fileInput').setInputFiles({name:'synthetic-tone.wav',mimeType:'audio/wav',buffer:wav});await page.waitForFunction(()=>!document.querySelector('#mobileProcessButton').disabled);}
+if(file==='dist/index.html'&&[320,393].includes(width)){const samples=1600,wav=Buffer.alloc(44+samples*2);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(16000,24);wav.writeUInt32LE(32000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(samples*2,40);for(let i=0;i<samples;i++)wav.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*440/16000)*1000),44+i*2);await page.locator('#fileInput').setInputFiles({name:'recording-2026-11-17T11-06-51-849Z-a-very-long-recording-name-that-should-truncate.wav',mimeType:'audio/wav',buffer:wav});await page.waitForFunction(()=>!document.querySelector('#mobileProcessButton').disabled);}
+if(file==='dist/index.html'&&[320,393].includes(width)){
+  for(const selector of ['#sourceSection','#sourceCard','.source-summary','#sourceName','#replaceButton','.wave-wrap','#sourceAudio']){
+    const loc=page.locator(selector);
+    assert.ok(await loc.isVisible(),label+': selected audio element visible '+selector);
+    const rect=await loc.boundingBox();
+    assert.ok(rect.x>=-1&&rect.x+rect.width<=width+1,label+': selected audio fits viewport '+selector+' '+JSON.stringify(rect));
+  }
+  const card=await page.locator('#sourceCard').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
+  assert.ok(card.scroll<=card.client+1,label+': source card must not overflow '+JSON.stringify(card));
+  const filename=await page.locator('#sourceName').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,overflow:getComputedStyle(el).textOverflow}));
+  assert.ok(filename.scroll>filename.client&&filename.overflow==='ellipsis',label+': long filename should truncate inside its card '+JSON.stringify(filename));
+}
 if(cfg.nav){assert.equal(await page.locator(cfg.nav).isVisible(),width<=cfg.bp,label+': functional navigation');if(width<=cfg.bp)await bounds(page.locator(cfg.nav),width,height,label);}
 for(const w of [cfg.bp+1,cfg.bp,width]){await page.setViewportSize({width:w,height});assert.equal(await page.locator('body > footer').isVisible(),w>cfg.bp,label+': footer resize');}
 await page.evaluate(()=>scrollTo({left:0,top:0,behavior:'instant'}));await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
