@@ -41,34 +41,31 @@ if(file==='dist/index.html'&&[320,393].includes(width)){
   await page.locator('#languageButton').click();
 }
 if(cfg.nav){assert.equal(await page.locator(cfg.nav).isVisible(),width<=cfg.bp,label+': functional navigation');if(width<=cfg.bp)await bounds(page.locator(cfg.nav),width,height,label);}
-// Only the phone header follows scroll direction. It must not shift content or hide on desktop.
+// The phone header belongs at the top of the document, not pinned or auto-revealed.
 if(file==='dist/index.html'&&[320,393,1360].includes(width)){
   const head=page.locator('.app-header');
   const mainStart=await page.locator('main').evaluate(el=>el.getBoundingClientRect().top+scrollY);
-  assert.equal(await head.evaluate(el=>el.classList.contains('is-scroll-hidden')),false,label+': initially visible header');
+  const position=await head.evaluate(el=>getComputedStyle(el).position);
+  assert.equal(position,width<=cfg.bp?'static':'sticky',label+': header positioning');
   await page.evaluate(()=>scrollTo({top:420,behavior:'instant'}));
+  await page.waitForFunction(()=>scrollY>=400,null,{timeout:5000});
+  const scrolledBox=await head.boundingBox();
   if(width<=cfg.bp){
-    await page.waitForFunction(()=>document.querySelector('.app-header').classList.contains('is-scroll-hidden'),null,{timeout:5000});
-    const hiddenBox=await head.boundingBox();
-    assert.ok(hiddenBox.y+hiddenBox.height<=2,label+': hidden header is fully off-screen '+JSON.stringify(hiddenBox));
-    assert.ok(await page.locator(cfg.nav).isVisible(),label+': phone footer is unaffected');
+    assert.ok(scrolledBox.y+scrolledBox.height<=1,label+': header scrolls out with document '+JSON.stringify(scrolledBox));
+    assert.ok(await page.locator(cfg.nav).isVisible(),label+': fixed phone actions remain visible');
     await page.evaluate(()=>scrollTo({top:260,behavior:'instant'}));
-    await page.waitForFunction(()=>!document.querySelector('.app-header').classList.contains('is-scroll-hidden'),null,{timeout:5000});
-    const revealedBox=await head.boundingBox();
-    assert.ok(revealedBox.y>=-1&&revealedBox.y<2,label+': up-scroll brings the header back '+JSON.stringify(revealedBox));
-    // Focusing a header control must bring the header back for keyboard users.
-    await page.evaluate(()=>scrollTo({top:600,behavior:'instant'}));
-    await page.waitForFunction(()=>document.querySelector('.app-header').classList.contains('is-scroll-hidden'),null,{timeout:5000});
-    await page.locator('#helpButton').focus();
-    await page.waitForFunction(()=>!document.querySelector('.app-header').classList.contains('is-scroll-hidden'),null,{timeout:5000});
-    await page.evaluate(()=>document.activeElement.blur());
+    await page.waitForFunction(()=>Math.abs(scrollY-260)<=1,null,{timeout:5000});
+    const upBox=await head.boundingBox();
+    assert.ok(upBox.y+upBox.height<=1,label+': partial upward scroll does not bring back header '+JSON.stringify(upBox));
   }else{
-    assert.equal(await head.evaluate(el=>el.classList.contains('is-scroll-hidden')),false,label+': desktop header stays visible');
+    assert.ok(scrolledBox.y>=-1&&scrolledBox.y<=2,label+': desktop header remains sticky '+JSON.stringify(scrolledBox));
   }
   await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
-  await page.waitForFunction(()=>!document.querySelector('.app-header').classList.contains('is-scroll-hidden'),null,{timeout:5000});
+  await page.waitForFunction(()=>scrollY<=1,null,{timeout:5000});
+  const topBox=await head.boundingBox();
+  assert.ok(topBox.y>=-1&&topBox.y<2,label+': header appears at top '+JSON.stringify(topBox));
   const mainEnd=await page.locator('main').evaluate(el=>el.getBoundingClientRect().top+scrollY);
-  assert.ok(Math.abs(mainStart-mainEnd)<=1,label+': hiding header must not move the document');
+  assert.ok(Math.abs(mainStart-mainEnd)<=1,label+': normal document flow remains unchanged');
 }
 for(const w of [cfg.bp+1,cfg.bp,width]){await page.setViewportSize({width:w,height});assert.equal(await page.locator('body > footer').isVisible(),w>cfg.bp,label+': footer resize');}
 await page.evaluate(()=>scrollTo({left:0,top:0,behavior:'instant'}));await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
