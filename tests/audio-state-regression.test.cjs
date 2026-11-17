@@ -68,9 +68,9 @@ test('speech level restoration is voice-aware, bounded and safe for silence',()=
     return {original,cleaned};
   };
   const quieted=make();
-  const earlier=quieted.cleaned[0],boost=restoreSpeechLevel(quieted.original,quieted.cleaned);
+  const earlier=quieted.cleaned[64],boost=restoreSpeechLevel(quieted.original,quieted.cleaned);
   assert.ok(boost>1.11&&boost<=1.35,'A quieter speech-like signal gets a bounded boost');
-  assert.equal(quieted.cleaned[0],earlier*boost,'The gain is applied to output, not original');
+  assert.ok(Math.abs(quieted.cleaned[64]-earlier*boost)<1e-6,'The gain is applied to output, not original');
   assert.ok(Math.max(...quieted.cleaned)<.98,'Boost must not clip the export');
 
   const alreadyFine=make(.25,.018,1);
