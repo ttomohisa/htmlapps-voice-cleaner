@@ -124,8 +124,109 @@ const server = http.createServer((req, res) => {
     assert.equal(wavData.toString('ascii', 8, 12), 'WAVE', 'WAV format header missing');
     assert.equal(wavData.readUInt32LE(24), 16000, 'Incorrect WAV sample rate');
     assert.ok(wavData.length > 32000, 'Exported WAV contains too little audio');
+
+    // A preview made after a full result must not silently replace its saved WAV.
+    await page.locator('#outputFilename').fill('review-copy');
+    await sourceSeek.evaluate(el=>{
+      el.value='1.1';
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.waitForFunction(()=>document.querySelector('#sourceAudio').currentTime>1.0);
+    await page.locator('#previewButton').click();
+    await page.waitForFunction(()=>{
+      const text=document.querySelector('#saveScope')?.textContent||'';
+      return text.includes('previous')||text.includes('前回');
+    },null,{timeout:45000});
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Preview must retain the last full WAV');
+    const saveAfterPreview=page.waitForEvent('download',{timeout:10000});
+    await page.locator('#mobileSaveButton').click();
+    const retained=await saveAfterPreview;
+    assert.equal(retained.suggestedFilename(),'review-copy.wav','Edited filename must be respected');
+    assert.equal(fs.readFileSync(await retained.path()).length,wavData.length,'A preview must not truncate the full WAV');
+
+    // Invalid replacement and canceled valid replacement leave the existing result intact.
+    await page.locator('#fileInput').setInputFiles({
+      name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('not audio')
+    });
+    await page.waitForFunction(()=>document.querySelector('#sourceError').textContent.trim().length>0);
+    assert.equal(await page.locator('#sourceName').textContent(),'test-speech-with-noise.wav');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Decode failure must retain full result');
+    assert.equal(await page.locator('#outputFilename').inputValue(),'review-copy');
+    const alternate={name:'replacement.wav',mimeType:'audio/wav',buffer:pcmWav(3)};
+    await page.locator('#fileInput').setInputFiles(alternate);
+    await page.locator('#appConfirmDialog').waitFor({state:'visible'});
+    await page.locator('#appConfirmCancel').click();
+    assert.equal(await page.locator('#sourceName').textContent(),'test-speech-with-noise.wav');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Cancel replacement must retain full result');
+    assert.equal(await page.locator('#outputFilename').inputValue(),'review-copy');
+    await page.locator('#fileInput').setInputFiles(alternate);
+    await page.locator('#appConfirmDialog').waitFor({state:'visible'});
+    await page.locator('#appConfirmOk').click();
+    await page.waitForFunction(()=>document.querySelector('#sourceName').textContent==='replacement.wav'
+      && document.querySelector('#resultSection').hidden);
+    assert.ok(await page.locator('#mobileSaveButton').isDisabled(),'Accepted replacement must clear the old WAV');
+
+    // Simulate a Worker delivering a queued completion after termination. Only the new run owns the result.
+    await page.evaluate(()=>{
+      window.__fakeWorkers=[];
+      window.Worker=class {
+        constructor(){this.id=window.__fakeWorkers.length+1;window.__fakeWorkers.push(this);}
+        postMessage(msg){
+          const count=this.id===1?16000:msg.pcmBuffer.byteLength/4;
+          const output=new Float32Array(count);
+          setTimeout(()=>this.onmessage?.({data:{type:'done',buffer:output.buffer}}),this.id===1?180:30);
+        }
+        terminate(){this.terminated=true;}
+      };
+    });
+    await page.locator('#mobileProcessButton').click();
+    await page.waitForFunction(()=>window.__fakeWorkers.length===1);
+    await page.locator('#cancelButton').click();
+    assert.ok(await page.locator('#resultSection').isHidden(),'Cancel should keep the new source without results');
+    await page.locator('#mobileProcessButton').click();
+    await page.waitForFunction(()=>document.querySelector('#resultContext').textContent.includes('0:03'));
+    await page.waitForTimeout(220);
+    assert.ok((await page.locator('#resultContext').textContent()).includes('0:03'),'Late canceled Worker overwrote the current run');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled());
+    assert.deepEqual(logs.filter(line=>line.startsWith('JS:')),[],'Unexpected page errors');
     assert.ok(logs.every(line => !line.startsWith('unexpected external request:')), 'Runtime requested external network');
-    console.log('[PASS] 2-second speech/noise WAV -> GTCRN WASM -> playback result -> WAV download; no external network.');
+    console.log('[PASS] GTCRN/WAV, preview retention, replacement protection, stale Worker and offline checks.');
+
+    // Delay first-time engine setup, then cancel before the Worker could begin.
+    const slowPage=await browser.newPage({viewport:{width:980,height:800}});
+    try{
+      await slowPage.addInitScript(()=>{
+        let assets;
+        Object.defineProperty(window,'StandaloneAssets',{
+          configurable:true,
+          get(){return assets;},
+          set(value){assets=new Proxy(value,{get(target,key){
+            if(key==='blobUrlAsync')return async(...args)=>{
+              await new Promise(resolve=>setTimeout(resolve,350));
+              return target.blobUrlAsync(...args);
+            };
+            return Reflect.get(target,key);
+          }});}
+        });
+        window.__startedWorkers=0;
+        window.Worker=class{constructor(){window.__startedWorkers++;}postMessage(){}terminate(){}};
+      });
+      await slowPage.goto(origin+'/index.html',{waitUntil:'load'});
+      await slowPage.locator('#fileInput').setInputFiles({
+        name:'engine-cancel.wav',mimeType:'audio/wav',buffer:pcmWav(1)
+      });
+      await slowPage.waitForFunction(()=>!document.querySelector('#processButton').disabled);
+      await slowPage.locator('#processButton').click();
+      await slowPage.waitForFunction(()=>!document.querySelector('#cancelButton').disabled);
+      await slowPage.locator('#cancelButton').click();
+      await slowPage.waitForTimeout(600);
+      assert.equal(await slowPage.evaluate(()=>window.__startedWorkers),0,
+        'Canceled engine initialization unexpectedly started a Worker');
+      assert.ok(await slowPage.locator('#resultSection').isHidden());
+      assert.ok(await slowPage.locator('#processButton').isEnabled());
+      console.log('[PASS] Cancel during first-time engine preparation.');
+    }finally{await slowPage.close();}
+
   } catch (error) {
     console.error('[FAIL] Browser audio smoke test:', error.stack || error);
     for (const line of logs) console.error('  ' + line);
