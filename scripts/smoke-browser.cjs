@@ -144,6 +144,18 @@ const server = http.createServer((req, res) => {
     assert.equal(retained.suggestedFilename(),'review-copy.wav','Edited filename must be respected');
     assert.equal(fs.readFileSync(await retained.path()).length,wavData.length,'A preview must not truncate the full WAV');
 
+    // A completed playback position must still produce a usable preview.
+    await sourceSeek.focus();
+    await page.keyboard.press('End');
+    await page.waitForFunction(()=>document.querySelector('#sourceAudio').currentTime>=1.98);
+    await page.locator('#previewButton').click();
+    await page.waitForFunction(()=>{
+      const result=document.querySelector('#resultContext')?.textContent||'';
+      return result.includes('0:00')&&result.includes('0:02')&&document.querySelector('#mobileProcessing').hidden;
+    },null,{timeout:45000});
+    assert.ok(await page.locator('#resultSection').isVisible(),'Preview at playback end must produce a result');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Full WAV remains saveable after end-of-playback preview');
+
     // Invalid replacement and canceled valid replacement leave the existing result intact.
     await page.locator('#fileInput').setInputFiles({
       name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('not audio')
@@ -159,6 +171,14 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.locator('#sourceName').textContent(),'test-speech-with-noise.wav');
     assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Cancel replacement must retain full result');
     assert.equal(await page.locator('#outputFilename').inputValue(),'review-copy');
+    // The close icon must behave like Cancel and preserve the current work.
+    await page.locator('#fileInput').setInputFiles(alternate);
+    await page.locator('#appConfirmDialog').waitFor({state:'visible'});
+    await page.locator('#appConfirmClose').click();
+    await page.locator('#appConfirmDialog').waitFor({state:'hidden'});
+    assert.equal(await page.locator('#sourceName').textContent(),'test-speech-with-noise.wav');
+    assert.equal(await page.locator('#outputFilename').inputValue(),'review-copy');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Close replacement must preserve full WAV');
     await page.locator('#fileInput').setInputFiles(alternate);
     await page.locator('#appConfirmDialog').waitFor({state:'visible'});
     await page.locator('#appConfirmOk').click();
