@@ -13,6 +13,8 @@
 - Preserve the last whole-file WAV through previews, and identify the result used by Save.
 - Keep microphone recording exclusive, ensure HTML hidden sections stay hidden, cover waveform tails, and guard rapid Before/After playback switches.
 - Expand Chromium browser regression coverage for these transitions.
+- Improve phone workflow: try 10 seconds, compare, then process all; keep whole-file access and fixed-bar progress/cancel.
+- Restore a limited amount of speech level when reduced by denoising, with peak and steady-noise safeguards.
 
 
 - Hide the phone informational footer and place existing build metadata at the end of Help, preserving functional controls and keyboard access.
