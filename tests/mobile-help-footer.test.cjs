@@ -30,7 +30,7 @@ test('release is tied to main and a new SemVer tag',()=>{
 });
 
 test('phone header appears only at the top and desktop remains sticky',()=>{
-  assert.match(html,/@media \\(max-width: 600px\\)[\\s\\S]*?\\.app-header \\{ position: static; \\}/);
-  assert.match(html,/\\.app-header \\{[\\s\\S]*?position: sticky;/);
+  assert.match(html,/@media \(max-width: 600px\)[\s\S]*?\.app-header \{ position: static; \}/);
+  assert.match(html,/\.app-header \{[\s\S]*?position: sticky;/);
   assert.doesNotMatch(html,/is-scroll-hidden|schedulePhoneHeader|headerScrollTravel/);
 });
