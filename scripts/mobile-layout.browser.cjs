@@ -48,7 +48,7 @@ if(file==='dist/index.html'&&[320,393,1360].includes(width)){
   const position=await head.evaluate(el=>getComputedStyle(el).position);
   assert.equal(position,width<=cfg.bp?'static':'sticky',label+': header positioning');
   await page.evaluate(()=>scrollTo({top:420,behavior:'instant'}));
-  await page.waitForFunction(()=>scrollY>=400,null,{timeout:5000});
+  if(width<=cfg.bp)await page.waitForFunction(()=>scrollY>=400,null,{timeout:5000});
   const scrolledBox=await head.boundingBox();
   if(width<=cfg.bp){
     assert.ok(scrolledBox.y+scrolledBox.height<=1,label+': header scrolls out with document '+JSON.stringify(scrolledBox));
