@@ -125,6 +125,18 @@ const server = http.createServer((req, res) => {
     assert.equal(wavData.readUInt32LE(24), 16000, 'Incorrect WAV sample rate');
     assert.ok(wavData.length > 32000, 'Exported WAV contains too little audio');
 
+    // Browser back/forward cache must not revoke the audio Blob URLs.
+    await page.evaluate(()=>{
+      const transition=new PageTransitionEvent('pagehide',{persisted:true});
+      window.dispatchEvent(transition);
+      document.querySelector('#sourceAudio').load();
+      document.querySelector('#resultAudio').load();
+    });
+    await page.waitForFunction(()=>document.querySelector('#sourceAudio').readyState>=1
+      && document.querySelector('#resultAudio').readyState>=1,null,{timeout:10000});
+    assert.equal(await page.locator('#sourceAudio').evaluate(el=>el.error?.code||0),0,'Source URL must survive BFCache');
+    assert.equal(await page.locator('#resultAudio').evaluate(el=>el.error?.code||0),0,'Result URL must survive BFCache');
+
     // A preview made after a full result must not silently replace its saved WAV.
     await page.locator('#outputFilename').fill('review-copy');
     await sourceSeek.evaluate(el=>{
