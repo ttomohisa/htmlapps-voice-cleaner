@@ -919,7 +919,7 @@
       function outputName(){ const raw=$('#outputFilename').value; return `${safeStem(raw)}.wav`; }
       function updateSourceMeta(){
         if(!state.sourcePcm)return;
-        $('#sourceMeta').textContent=`${formatTime(state.duration)} · ${Math.round(state.sourceRate/100)/10} kHz · ${state.sourceChannels===1?t('monoLabel'):`${state.sourceChannels} ch`}`;
+        $('#sourceMeta').textContent=`${formatTime(state.duration)} · ${state.sourceChannels===1?t('monoLabel'):`${state.sourceChannels} ch`}`;
       }
       function updateMobileControls(){ $('#mobileProcessLabel').textContent=t(state.result ? 'mobileCleanAll' : 'mobileTryTen'); }
       function setPhase(phase){
