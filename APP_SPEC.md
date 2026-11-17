@@ -40,6 +40,10 @@ Version 1.0.1. Browser Kitty. Primary purpose: locally reduce background noise i
 - A completed full-length WAV remains available after later 10-second previews and failed/canceled runs for the same audio. The save UI identifies the full-length target, never exports a preview in its place.
 - Canceling runtime preparation or processing invalidates its run identity; delayed Worker callbacks must never write into a later run. Progress must measure the saved sample count, not a transferred/detached input array.
 - Microphone permission requests and active recordings block file selection and noise-reduction runs. The record-stop button remains usable while recording.
+- After loading audio, keep a separate visible record-again control. It shares microphone state and recording behavior with the initial record button; stopping it offers replacement confirmation without discarding the previous source on cancel.
+- The close icon in replacement confirmation must behave as Cancel. When playback is at its end, preview the final up-to-10 seconds rather than silently doing nothing.
+- In back/forward cache transitions, preserve source and result Blob URLs so restored tabs can still play audio. On permanent navigation clean up Blob URLs.
+- Localize audio channel names and accessible labels in Japanese and English.
 - Every `hidden` section must stay invisible despite author `display` CSS rules; waveform downsampling must include the last sample.
 
 ## Privacy / compatibility
