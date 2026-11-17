@@ -1205,11 +1205,56 @@
         }
       }
 
+
+      // Restore a small amount of speech loudness lost during suppression.
+      // The test is deliberately conservative: it needs changing speech-like levels,
+      // ignores nearly silent clips, and never raises an already loud/peaking signal.
+      function restoreSpeechLevel(original,cleaned){
+        const length=Math.min(original.length,cleaned.length);
+        const frameSize=640; // 40 ms at 16 kHz, for an inexpensive loudness estimate.
+        if(length<frameSize*3)return 1;
+        const frames=[], cleanedLevels=[];
+        let peak=0;
+        for(let start=0;start<length;start+=frameSize){
+          const end=Math.min(start+frameSize,length),count=end-start;
+          let originalPower=0,cleanedPower=0;
+          for(let i=start;i<end;i++){
+            const input=original[i],output=cleaned[i];
+            originalPower+=input*input;cleanedPower+=output*output;
+            peak=Math.max(peak,Math.abs(output));
+          }
+          const level=Math.sqrt(cleanedPower/count);
+          frames.push({original:Math.sqrt(originalPower/count),cleaned:level});
+          cleanedLevels.push(level);
+        }
+        const sorted=cleanedLevels.sort((a,b)=>a-b);
+        const low=sorted[Math.floor((sorted.length-1)*.20)];
+        const high=sorted[Math.floor((sorted.length-1)*.80)];
+        // Continuous hum/noise, near-silence, or a clip without dynamic speech-like
+        // sections should not become louder just because suppression removed noise.
+        if(high<.010||high<low*1.8||peak>=.98)return 1;
+        const ratios=[];
+        for(const frame of frames){
+          if(frame.cleaned>=Math.max(.006,high*.68)&&frame.original>=.008){
+            ratios.push(frame.original/frame.cleaned);
+          }
+        }
+        if(ratios.length<3)return 1;
+        ratios.sort((a,b)=>a-b);
+        const voicedRatio=ratios[Math.floor(ratios.length/2)];
+        // Up to +2.6 dB. Never attenuate and never clip the 16-bit WAV.
+        const gain=Math.min(1.35,voicedRatio,.98/peak);
+        if(!Number.isFinite(gain)||gain<1.11)return 1;
+        for(let i=0;i<cleaned.length;i++)cleaned[i]*=gain;
+        return gain;
+      }
+
       function getResultOriginal(){ if(!state.result)return null; if(state.resultKind==='full')return state.sourcePcm; const a=Math.round(state.resultStart*SAMPLE_RATE);return state.sourcePcm.slice(a,a+state.result.length); }
       function commitResult(kind,start,output){
         // Create new playback URLs before touching the last successful result.
         const a=Math.round(start*SAMPLE_RATE);
         const original=kind==='full'?state.sourcePcm:state.sourcePcm.slice(a,a+output.length);
+        restoreSpeechLevel(original,output);
         const originalUrl=URL.createObjectURL(pcmToWav(original));
         let cleanUrl;
         try{cleanUrl=URL.createObjectURL(pcmToWav(output));}
