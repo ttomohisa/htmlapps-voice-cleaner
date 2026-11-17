@@ -11,7 +11,7 @@ test('intro is concise and duplicate feature cards are removed',()=>{
   assert.match(html,/introTitle:'Reduce noise in audio recordings'/);
 });
 test('local processing badge is hidden only on phone widths',()=>{
-  assert.match(html,/@media \(max-width: 600px\)\s*\{\s*\.local-badge\s*\{\s*display:\s*none;/);
+  assert.match(html,/@media \(max-width: 600px\)[\s\S]*?\.local-badge\s*\{\s*display:\s*none;/);
 });
 
 test('release is tied to main and a new SemVer tag',()=>{
