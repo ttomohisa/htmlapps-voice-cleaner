@@ -29,10 +29,8 @@ test('release is tied to main and a new SemVer tag',()=>{
   assert.ok(workflow.includes('sha256sum'));
 });
 
-test('phone header hides on downward scroll and returns on upward scroll',()=>{
-  assert.match(html,/@media \(max-width: 600px\)[\s\S]*?\.app-header\.is-scroll-hidden \{ transform: translateY\(calc\(-100% - 2px\)\); \}/);
-  assert.match(html,/@media \(max-width: 600px\) and \(prefers-reduced-motion: reduce\)/);
-  assert.match(html,/window\.addEventListener\('scroll',schedulePhoneHeader,\{passive:true\}\)/);
-  assert.match(html,/phoneHeader\.addEventListener\('focusin',showPhoneHeader\)/);
-  assert.match(html,/if\(!phoneHeaderMedia\.matches\|\|y<=32\|\|focused\|\|document\.querySelector\('dialog\[open\]'\)\)/);
+test('phone header appears only at the top and desktop remains sticky',()=>{
+  assert.match(html,/@media \\(max-width: 600px\\)[\\s\\S]*?\\.app-header \\{ position: static; \\}/);
+  assert.match(html,/\\.app-header \\{[\\s\\S]*?position: sticky;/);
+  assert.doesNotMatch(html,/is-scroll-hidden|schedulePhoneHeader|headerScrollTravel/);
 });
