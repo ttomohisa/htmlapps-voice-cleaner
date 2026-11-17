@@ -886,8 +886,8 @@
       window.AppToast=Object.freeze({ show({message,actionLabel='',onAction=null,duration=3200,tone='default'}={}) { clearTimeout(toastTimer); toastMessage.textContent=message||''; toast.dataset.tone=tone; toastHandler=typeof onAction==='function'?onAction:null; toastAction.hidden=!toastHandler; toastAction.textContent=actionLabel||''; toast.classList.add('show'); if(duration>0) toastTimer=setTimeout(dismissToast,duration); return {dismiss:dismissToast}; }, dismiss:dismissToast });
       toastAction.addEventListener('click',()=>{ const h=toastHandler; dismissToast(); h?.(); });
 
-      const state={ generation:0, runId:0, phase:'empty', source:null, sourcePcm:null, duration:0, sourceRate:0, sourceChannels:0, result:null, resultKind:null, resultStart:0, fullResult:null, worker:null, runtimeUrl:null, wasmBytes:null, objectUrls:new Set(), resultUrls:new Set() };
-      let recording=false, recorder=null, recorderStream=null, recorderChunks=[], recordTimer=0, recordStartedAt=0;
+      const state={ generation:0, runId:0, resultSwitchId:0, phase:'empty', source:null, sourcePcm:null, duration:0, sourceRate:0, sourceChannels:0, result:null, resultKind:null, resultStart:0, fullResult:null, worker:null, runtimeUrl:null, wasmBytes:null, objectUrls:new Set(), resultUrls:new Set() };
+      let recording=false, requestingMic=false, recorder=null, recorderStream=null, recorderChunks=[], recordTimer=0, recordStartedAt=0;
       const MAX_BYTES=250*1024*1024, MAX_DURATION=3600, SAMPLE_RATE=16000;
 
       function revokeObjectUrls(){ for(const url of state.objectUrls) URL.revokeObjectURL(url); state.objectUrls.clear(); revokeResultUrls(); }
@@ -897,7 +897,7 @@
       function formatBytes(bytes){ if(bytes<1024*1024) return `${(bytes/1024).toFixed(0)} KB`; return `${(bytes/1024/1024).toFixed(bytes>10*1024*1024?0:1)} MB`; }
       function safeStem(name){ return (name||APP_CONFIG.slug).replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim().slice(0,110) || APP_CONFIG.slug; }
       function outputName(){ const raw=$('#outputFilename').value; return `${safeStem(raw)}.wav`; }
-      function setPhase(phase){ state.phase=phase; const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing'; const locked=busy||recording; const ready=Boolean(state.sourcePcm)&&!locked; $('#previewButton').disabled=!ready; $('#processButton').disabled=!ready; $('#mobileProcessButton').disabled=!ready; $('#chooseFileButton').disabled=locked; $('#replaceButton').disabled=locked; $('#fileInput').disabled=locked; $('#fileFallbackButton').disabled=locked; $('#fileFallbackInput').disabled=locked; $('#recordButton').disabled=busy||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')); $('#cancelButton').disabled=!(phase==='loading-runtime'||phase==='processing'); $('#mobileSaveButton').disabled=!state.fullResult||locked; $('#saveButton').disabled=!state.fullResult||locked; }
+      function setPhase(phase){ state.phase=phase; const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing'; const locked=busy||recording||requestingMic; const ready=Boolean(state.sourcePcm)&&!locked; $('#previewButton').disabled=!ready; $('#processButton').disabled=!ready; $('#mobileProcessButton').disabled=!ready; $('#chooseFileButton').disabled=locked; $('#replaceButton').disabled=locked; $('#fileInput').disabled=locked; $('#fileFallbackButton').disabled=locked; $('#fileFallbackInput').disabled=locked; $('#recordButton').disabled=busy||requestingMic||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')); $('#cancelButton').disabled=!(phase==='loading-runtime'||phase==='processing'); $('#mobileSaveButton').disabled=!state.fullResult||locked; $('#saveButton').disabled=!state.fullResult||locked; }
       function showError(which,message){ const el=$(which); el.textContent=message; el.classList.toggle('is-visible',Boolean(message)); }
       function clearErrors(){ showError('#sourceError',''); showError('#processError',''); }
       function setProgress(show,title='',percent=0,status=''){ $('#progressCard').classList.toggle('is-visible',show); $('#progressTitle').textContent=title; $('#progressPercent').textContent=`${Math.round(percent)}%`; $('#progressFill').style.width=`${Math.max(0,Math.min(100,percent))}%`; $('#progressStatus').textContent=status; }
@@ -987,14 +987,81 @@
         if(generation!==state.generation) return null; return {pcm:new Float32Array(rendered.getChannelData(0)),duration,srcRate,channels};
       }
 
+      function confirmAudioReplacement(){
+        const dialog=$('#appConfirmDialog'),cancel=$('#appConfirmCancel'),ok=$('#appConfirmOk');
+        $('#appConfirmTitle').textContent=t('replaceConfirmTitle');
+        $('#appConfirmMessage').textContent=t('replaceConfirmMessage');
+        cancel.textContent=t('replaceCancel');
+        ok.textContent=t('replaceConfirmAction');
+        return new Promise(resolve=>{
+          let settled=false;
+          const cleanup=()=>{
+            cancel.removeEventListener('click',onCancel);
+            ok.removeEventListener('click',onAccept);
+            dialog.removeEventListener('close',onClose);
+            dialog.removeEventListener('click',onBackdrop);
+          };
+          const finish=accepted=>{
+            if(settled)return;
+            settled=true;cleanup();
+            if(dialog.open)dialog.close();
+            resolve(accepted);
+          };
+          const onCancel=()=>finish(false),onAccept=()=>finish(true),onClose=()=>finish(false);
+          const onBackdrop=event=>{
+            if(event.target!==dialog)return;
+            const rect=dialog.getBoundingClientRect();
+            if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)finish(false);
+          };
+          cancel.addEventListener('click',onCancel);ok.addEventListener('click',onAccept);
+          dialog.addEventListener('close',onClose);dialog.addEventListener('click',onBackdrop);
+          dialog.showModal();cancel.focus();
+        });
+      }
+
       async function loadSource(file){
-        if(!file)return; stopProcessing(false); clearErrors(); state.generation+=1; const gen=state.generation; revokeObjectUrls(); state.source=file; state.sourcePcm=null; state.result=null;state.resultKind=null; $('#resultSection').hidden=true;
-        $('#sourceAudio').pause(); $('#sourceAudio').removeAttribute('src'); $('#sourceAudio').load();
-        $('#resultAudio').pause(); $('#resultAudio').removeAttribute('src'); $('#resultAudio').load();
-        resetWaveSeeks(); drawWave($('#sourceWaveCanvas'),null);
-        $('#dropZone').hidden=true; $('#sourceCard').hidden=false; $('#sourceName').textContent=file.name||'recording'; $('#sourceMeta').textContent=`${formatBytes(file.size)} · …`; setPhase('loading-source');
-        try { const d=await decodeTo16k(file,gen); if(!d||gen!==state.generation)return; state.sourcePcm=d.pcm;state.duration=d.duration;state.sourceRate=d.srcRate;state.sourceChannels=d.channels; $('#sourceMeta').textContent=`${formatTime(d.duration)} · ${Math.round(d.srcRate/100)/10} kHz · ${d.channels===1?'Mono':`${d.channels} ch`}`; syncSeekGroup(seekGroups[0],0); const srcUrl=makeUrl(pcmToWav(d.pcm)); $('#sourceAudio').src=srcUrl; $('#outputFilename').value=`${safeStem(file.name)}-cleaned`; requestAnimationFrame(()=>drawWave($('#sourceWaveCanvas'),d.pcm)); setPhase('ready'); window.AppToast.show({message:t('decoded'),tone:'success'}); }
-        catch(e){ if(gen!==state.generation)return; state.sourcePcm=null; $('#dropZone').hidden=false;$('#sourceCard').hidden=true;showError('#sourceError',e?.message||t('decodeFailed'));setPhase('error'); }
+        if(!file||recording||requestingMic||['loading-source','loading-runtime','processing'].includes(state.phase))return;
+        const previous=Boolean(state.sourcePcm),gen=++state.generation;
+        clearErrors();
+        setPhase('loading-source');
+        setProgress(true,t('loadingSource'),0,'');
+        try{
+          // Decode first. Failed or canceled replacements must not discard the current work.
+          const decoded=await decodeTo16k(file,gen);
+          if(!decoded||gen!==state.generation)return;
+          if(previous){
+            setProgress(false);
+            setPhase('ready');
+            if(!await confirmAudioReplacement()||gen!==state.generation){
+              requestAnimationFrame(()=>{if(!$('#replaceButton').disabled)$('#replaceButton').focus();});
+              return;
+            }
+            setPhase('loading-source');
+          }
+          stopProcessing(false);
+          $('#sourceAudio').pause();$('#sourceAudio').removeAttribute('src');$('#sourceAudio').load();
+          $('#resultAudio').pause();$('#resultAudio').removeAttribute('src');$('#resultAudio').load();
+          revokeObjectUrls();
+          state.source=file;state.sourcePcm=decoded.pcm;state.duration=decoded.duration;
+          state.sourceRate=decoded.srcRate;state.sourceChannels=decoded.channels;
+          state.result=null;state.resultKind=null;state.resultStart=0;state.fullResult=null;
+          state.resultSwitchId++;
+          $('#resultSection').hidden=true;
+          $('#dropZone').hidden=true;$('#sourceCard').hidden=false;
+          $('#sourceName').textContent=file.name||'recording';
+          $('#sourceMeta').textContent=`${formatTime(decoded.duration)} · ${Math.round(decoded.srcRate/100)/10} kHz · ${decoded.channels===1?'Mono':`${decoded.channels} ch`}`;
+          resetWaveSeeks();syncSeekGroup(seekGroups[0],0);
+          const url=makeUrl(pcmToWav(decoded.pcm));$('#sourceAudio').src=url;
+          $('#outputFilename').value=`${safeStem(file.name)}-cleaned`;
+          requestAnimationFrame(()=>{drawWave($('#sourceWaveCanvas'),decoded.pcm);if(previous&&!$('#replaceButton').disabled)$('#replaceButton').focus();});
+          setPhase('ready');window.AppToast.show({message:t('decoded'),tone:'success'});
+        }catch(error){
+          if(gen!==state.generation)return;
+          showError('#sourceError',error?.message||t('decodeFailed'));
+          setPhase(previous?'ready':'error');
+        }finally{
+          if(gen===state.generation){setProgress(false);if(state.phase==='loading-source')setPhase(previous?'ready':'error');}
+        }
       }
 
       async function ensureRuntime(){
