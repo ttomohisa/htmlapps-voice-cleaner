@@ -20,8 +20,8 @@ Version 1.0.1. Browser Kitty. Primary purpose: locally reduce background noise i
 ## Phone workflow
 ## Phone header behavior
 
-- At viewport widths of 600px or less, the sticky header slides out during intentional downward scrolling and returns after a short upward scroll, remaining visible near the page top. This behavior must not change the height of the document or interfere with the fixed bottom actions.
-- On desktop (over 600px), the header stays visible as before. Keyboard focus on a header control, dialog visibility, top-of-page scroll, or switching to desktop size must reveal the header. Disable animation when reduced motion is requested.
+- At viewport widths of 600px or less, the header is a normal element at the top of the document, not fixed or sticky. It scrolls out with the page and does not reappear until the user returns to the top.
+- On desktop (over 600px), the header remains sticky as before. The fixed mobile bottom actions are unaffected.
 
 
 - The primary phone footer action runs a 10-second preview until there is a result, then offers whole-file processing; full processing is also directly available in the main panel without a prerequisite.
