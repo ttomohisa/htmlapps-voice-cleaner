@@ -186,6 +186,37 @@ const server = http.createServer((req, res) => {
       && document.querySelector('#resultSection').hidden);
     assert.ok(await page.locator('#mobileSaveButton').isDisabled(),'Accepted replacement must clear the old WAV');
 
+    // After the first file/recording, the microphone action must remain reachable.
+    const fakeMicWav=pcmWav(.6).toString('base64');
+    await page.evaluate((audioBase64)=>{
+      Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,value:async()=>({
+        getTracks:()=>[{stop(){}}]
+      })});
+      window.MediaRecorder=class {
+        static isTypeSupported(){return false;}
+        constructor(){this.state='inactive';this.mimeType='audio/wav';}
+        start(){this.state='recording';}
+        stop(){
+          this.state='inactive';
+          const bin=atob(audioBase64);
+          const bytes=Uint8Array.from(bin,ch=>ch.charCodeAt(0));
+          queueMicrotask(()=>{
+            this.ondataavailable?.({data:new Blob([bytes],{type:'audio/wav'})});
+            this.onstop?.();
+          });
+        }
+      };
+    },fakeMicWav);
+    await page.locator('#recordAgainButton').click();
+    await page.waitForFunction(()=>document.querySelector('#recordAgainButton').classList.contains('is-recording'));
+    assert.match(await page.locator('#recordAgainButtonLabel').textContent(),/Stop recording|録音を停止/);
+    await page.locator('#recordAgainButton').click();
+    await page.locator('#appConfirmDialog').waitFor({state:'visible',timeout:15000});
+    await page.locator('#appConfirmCancel').click();
+    assert.equal(await page.locator('#sourceName').textContent(),'replacement.wav',
+      'Declining rerecorded audio must preserve existing source');
+    assert.ok(await page.locator('#recordAgainButton').isEnabled(),'Recording remains reachable after canceling replacement');
+
     // Simulate a Worker delivering a queued completion after termination. Only the new run owns the result.
     await page.evaluate(()=>{
       window.__fakeWorkers=[];
