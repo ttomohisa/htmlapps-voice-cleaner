@@ -1038,10 +1038,12 @@
             }
             setPhase('loading-source');
           }
+          // Keep the prior source intact if WAV preparation fails.
+          const preparedUrl=URL.createObjectURL(pcmToWav(decoded.pcm));
           stopProcessing(false);
           $('#sourceAudio').pause();$('#sourceAudio').removeAttribute('src');$('#sourceAudio').load();
           $('#resultAudio').pause();$('#resultAudio').removeAttribute('src');$('#resultAudio').load();
-          revokeObjectUrls();
+          revokeObjectUrls();state.objectUrls.add(preparedUrl);
           state.source=file;state.sourcePcm=decoded.pcm;state.duration=decoded.duration;
           state.sourceRate=decoded.srcRate;state.sourceChannels=decoded.channels;
           state.result=null;state.resultKind=null;state.resultStart=0;state.fullResult=null;
@@ -1051,7 +1053,7 @@
           $('#sourceName').textContent=file.name||'recording';
           $('#sourceMeta').textContent=`${formatTime(decoded.duration)} · ${Math.round(decoded.srcRate/100)/10} kHz · ${decoded.channels===1?'Mono':`${decoded.channels} ch`}`;
           resetWaveSeeks();syncSeekGroup(seekGroups[0],0);
-          const url=makeUrl(pcmToWav(decoded.pcm));$('#sourceAudio').src=url;
+          $('#sourceAudio').src=preparedUrl;
           $('#outputFilename').value=`${safeStem(file.name)}-cleaned`;
           requestAnimationFrame(()=>{drawWave($('#sourceWaveCanvas'),decoded.pcm);if(previous&&!$('#replaceButton').disabled)$('#replaceButton').focus();});
           setPhase('ready');window.AppToast.show({message:t('decoded'),tone:'success'});
@@ -1064,10 +1066,20 @@
         }
       }
 
+      let runtimePromise=null;
       async function ensureRuntime(){
         if(state.runtimeUrl&&state.wasmBytes)return;
-        if(!StandaloneAssets.has('gtcrn-wasm','main')||!StandaloneAssets.has('gtcrn-wasm','wasm')) throw new Error(t('runtimeFailed'));
-        state.runtimeUrl=await StandaloneAssets.blobUrlAsync('gtcrn-wasm','main'); state.wasmBytes=await StandaloneAssets.bytesAsync('gtcrn-wasm','wasm');
+        if(!runtimePromise){
+          runtimePromise=(async()=>{
+            if(!StandaloneAssets.has('gtcrn-wasm','main')||!StandaloneAssets.has('gtcrn-wasm','wasm'))throw new Error(t('runtimeFailed'));
+            const url=await StandaloneAssets.blobUrlAsync('gtcrn-wasm','main');
+            try{
+              const bytes=await StandaloneAssets.bytesAsync('gtcrn-wasm','wasm');
+              state.runtimeUrl=url;state.wasmBytes=bytes;
+            }catch(error){URL.revokeObjectURL(url);blobUrls.delete(url);throw error;}
+          })().finally(()=>{runtimePromise=null;});
+        }
+        await runtimePromise;
       }
 
       function workerSource(){ return `
@@ -1156,7 +1168,7 @@
         let cleanUrl;
         try{cleanUrl=URL.createObjectURL(pcmToWav(output));}
         catch(error){URL.revokeObjectURL(originalUrl);throw error;}
-        const audio=$('#resultAudio');audio.pause();audio.removeAttribute('src');audio.load();
+        const audio=$('#resultAudio');state.resultSwitchId++;audio.pause();audio.removeAttribute('src');audio.load();
         revokeResultUrls();
         state.resultUrls.add(originalUrl);state.resultUrls.add(cleanUrl);
         state.result=output;state.resultKind=kind;state.resultStart=start;
@@ -1181,15 +1193,77 @@
         $('#saveScope').textContent=!state.fullResult?t('previewNotSaveable')
           : state.resultKind==='preview'?t('savePreviousFull'):t('saveCurrentFull');
       }
-      async function switchResult(which){ const audio=$('#resultAudio'); if(!state.result)return; const time=audio.currentTime||0, playing=!audio.paused; const url=audio.dataset[which==='cleaned'?'cleanedUrl':'originalUrl']; if(audio.src===url)return; $('#originalToggle').classList.toggle('is-active',which==='original');$('#cleanedToggle').classList.toggle('is-active',which==='cleaned'); audio.dataset.pendingWaveSeek=String(time); audio.src=url; syncSeekGroup(seekGroups[1],time); try{await new Promise(resolve=>audio.addEventListener('loadedmetadata',resolve,{once:true}));seekGroupTo(seekGroups[1],time);if(playing)await audio.play();}catch{} }
+      async function switchResult(which){
+        const audio=$('#resultAudio');if(!state.result)return;
+        const time=audio.currentTime||0,playing=!audio.paused;
+        const url=audio.dataset[which==='cleaned'?'cleanedUrl':'originalUrl'];
+        const switchId=++state.resultSwitchId;
+        if(audio.src===url)return;
+        $('#originalToggle').classList.toggle('is-active',which==='original');
+        $('#cleanedToggle').classList.toggle('is-active',which==='cleaned');
+        const ready=new Promise(resolve=>{
+          const done=()=>{audio.removeEventListener('loadedmetadata',done);audio.removeEventListener('error',done);resolve();};
+          audio.addEventListener('loadedmetadata',done);audio.addEventListener('error',done);
+        });
+        audio.dataset.pendingWaveSeek=String(time);audio.src=url;
+        syncSeekGroup(seekGroups[1],time);
+        try{
+          await ready;
+          if(switchId!==state.resultSwitchId)return;
+          seekGroupTo(seekGroups[1],time);
+          if(playing)await audio.play();
+        }catch{}
+      }
       function saveResult(){ if(!state.fullResult)return; const blob=pcmToWav(state.fullResult); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=outputName();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);window.AppToast.show({message:t('saved'),tone:'success'}); }
       function stopProcessing(showToast=true){ const active=state.phase==='processing'||state.phase==='loading-runtime'||Boolean(state.worker);state.runId++;if(state.worker){state.worker.terminate();state.worker=null;}if(active){setProgress(false);setPhase(state.sourcePcm?'ready':'empty');if(showToast)window.AppToast.show({message:t('cancelled')});} }
 
       async function toggleRecording(){
-        if(recording){ recorder?.stop(); return; }
-        if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){showError('#sourceError',t('micUnavailable'));return;}
-        try{ recorderStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); const options={}; for(const m of ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/mp4']){if(MediaRecorder.isTypeSupported?.(m)){options.mimeType=m;break;}} recorderChunks=[];recorder=new MediaRecorder(recorderStream,options); recorder.ondataavailable=e=>{if(e.data?.size)recorderChunks.push(e.data);}; recorder.onstop=async()=>{recording=false;clearInterval(recordTimer);recorderStream?.getTracks().forEach(tr=>tr.stop());recorderStream=null;$('#recordButton').classList.remove('is-recording');$('#recordButtonLabel').textContent=t('record');const mime=recorder.mimeType||'audio/webm';const ext=mime.includes('mp4')?'m4a':mime.includes('ogg')?'ogg':'webm';const blob=new Blob(recorderChunks,{type:mime});const file=new File([blob],`recording-${new Date().toISOString().replace(/[:.]/g,'-')}.${ext}`,{type:mime});window.AppToast.show({message:t('recordingStopped')});await loadSource(file);}; recorder.start(250); recording=true;recordStartedAt=Date.now();$('#recordButton').classList.add('is-recording');$('#recordButtonLabel').textContent=`${t('stopRecording')} 0:00`;recordTimer=setInterval(()=>{$('#recordButtonLabel').textContent=`${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}`;},500);window.AppToast.show({message:t('recordingStarted')}); }
-        catch(e){showError('#sourceError',t('micDenied')); recorderStream?.getTracks().forEach(tr=>tr.stop()); recorderStream=null;recording=false;}
+        if(recording){
+          if(recorder?.state==='recording'){recorder.stop();$('#recordButton').disabled=true;}
+          return;
+        }
+        if(requestingMic||['loading-source','loading-runtime','processing'].includes(state.phase))return;
+        if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
+          showError('#sourceError',t('micUnavailable'));return;
+        }
+        requestingMic=true;setPhase(state.phase);clearErrors();
+        try{
+          const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+          recorderStream=stream;
+          const options={};
+          for(const mime of ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/mp4']){
+            if(MediaRecorder.isTypeSupported?.(mime)){options.mimeType=mime;break;}
+          }
+          recorderChunks=[];
+          recorder=new MediaRecorder(recorderStream,options);
+          recorder.ondataavailable=event=>{if(event.data?.size)recorderChunks.push(event.data);};
+          recorder.onstop=async()=>{
+            recording=false;requestingMic=false;clearInterval(recordTimer);
+            recorderStream?.getTracks().forEach(track=>track.stop());recorderStream=null;
+            $('#recordButton').classList.remove('is-recording');
+            $('#recordButtonLabel').textContent=t('record');
+            setPhase(state.sourcePcm?'ready':'empty');
+            const mime=recorder.mimeType||'audio/webm';
+            const ext=mime.includes('mp4')?'m4a':mime.includes('ogg')?'ogg':'webm';
+            const blob=new Blob(recorderChunks,{type:mime});recorderChunks=[];
+            if(!blob.size){showError('#sourceError',t('recordingEmpty'));return;}
+            const file=new File([blob],`recording-${new Date().toISOString().replace(/[:.]/g,'-')}.${ext}`,{type:mime});
+            window.AppToast.show({message:t('recordingStopped')});
+            await loadSource(file);
+          };
+          recorder.start(250);requestingMic=false;recording=true;setPhase('recording');
+          recordStartedAt=Date.now();
+          $('#recordButton').classList.add('is-recording');
+          $('#recordButtonLabel').textContent=`${t('stopRecording')} 0:00`;
+          recordTimer=setInterval(()=>{
+            $('#recordButtonLabel').textContent=`${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}`;
+          },500);
+          window.AppToast.show({message:t('recordingStarted')});
+        }catch(error){
+          showError('#sourceError',t('micDenied'));
+          recorderStream?.getTracks().forEach(track=>track.stop());recorderStream=null;
+          requestingMic=false;recording=false;setPhase(state.sourcePcm?'ready':'empty');
+        }
       }
 
       $('#chooseFileButton').addEventListener('click',()=>$('#fileInput').click()); $('#replaceButton').addEventListener('click',()=>$('#fileInput').click()); $('#fileInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});$('#fileFallbackButton').addEventListener('click',()=>$('#fileFallbackInput').click());$('#fileFallbackInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});
