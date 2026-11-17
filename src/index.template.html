@@ -445,6 +445,9 @@
     }
 
 
+    /* The hidden attribute must also work on layout elements with author display rules. */
+    [hidden] { display: none !important; }
+
     /* Voice Cleaner */
     :root { --app-mobile-bottom-bar-height: 74px; }
     .brand-mark.wave-mark svg { width: 23px; height: 23px; }
@@ -882,7 +885,7 @@
       window.AppToast=Object.freeze({ show({message,actionLabel='',onAction=null,duration=3200,tone='default'}={}) { clearTimeout(toastTimer); toastMessage.textContent=message||''; toast.dataset.tone=tone; toastHandler=typeof onAction==='function'?onAction:null; toastAction.hidden=!toastHandler; toastAction.textContent=actionLabel||''; toast.classList.add('show'); if(duration>0) toastTimer=setTimeout(dismissToast,duration); return {dismiss:dismissToast}; }, dismiss:dismissToast });
       toastAction.addEventListener('click',()=>{ const h=toastHandler; dismissToast(); h?.(); });
 
-      const state={ generation:0, phase:'empty', source:null, sourcePcm:null, duration:0, sourceRate:0, sourceChannels:0, result:null, resultKind:null, resultStart:0, worker:null, runtimeUrl:null, wasmBytes:null, objectUrls:new Set(), resultUrls:new Set() };
+      const state={ generation:0, runId:0, phase:'empty', source:null, sourcePcm:null, duration:0, sourceRate:0, sourceChannels:0, result:null, resultKind:null, resultStart:0, fullResult:null, worker:null, runtimeUrl:null, wasmBytes:null, objectUrls:new Set(), resultUrls:new Set() };
       let recording=false, recorder=null, recorderStream=null, recorderChunks=[], recordTimer=0, recordStartedAt=0;
       const MAX_BYTES=250*1024*1024, MAX_DURATION=3600, SAMPLE_RATE=16000;
 
@@ -893,7 +896,7 @@
       function formatBytes(bytes){ if(bytes<1024*1024) return `${(bytes/1024).toFixed(0)} KB`; return `${(bytes/1024/1024).toFixed(bytes>10*1024*1024?0:1)} MB`; }
       function safeStem(name){ return (name||APP_CONFIG.slug).replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim().slice(0,110) || APP_CONFIG.slug; }
       function outputName(){ const raw=$('#outputFilename').value; return `${safeStem(raw)}.wav`; }
-      function setPhase(phase){ state.phase=phase; const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing'; const ready=Boolean(state.sourcePcm)&&!busy; $('#previewButton').disabled=!ready; $('#processButton').disabled=!ready; $('#mobileProcessButton').disabled=!ready; $('#chooseFileButton').disabled=busy; $('#replaceButton').disabled=busy; $('#fileInput').disabled=busy; $('#recordButton').disabled=busy||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')); $('#cancelButton').disabled=!(phase==='loading-runtime'||phase==='processing'); $('#mobileSaveButton').disabled=!(state.result&&state.resultKind==='full')||busy; $('#saveButton').disabled=!(state.result&&state.resultKind==='full')||busy; }
+      function setPhase(phase){ state.phase=phase; const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing'; const locked=busy||recording; const ready=Boolean(state.sourcePcm)&&!locked; $('#previewButton').disabled=!ready; $('#processButton').disabled=!ready; $('#mobileProcessButton').disabled=!ready; $('#chooseFileButton').disabled=locked; $('#replaceButton').disabled=locked; $('#fileInput').disabled=locked; $('#fileFallbackButton').disabled=locked; $('#fileFallbackInput').disabled=locked; $('#recordButton').disabled=busy||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')); $('#cancelButton').disabled=!(phase==='loading-runtime'||phase==='processing'); $('#mobileSaveButton').disabled=!state.fullResult||locked; $('#saveButton').disabled=!state.fullResult||locked; }
       function showError(which,message){ const el=$(which); el.textContent=message; el.classList.toggle('is-visible',Boolean(message)); }
       function clearErrors(){ showError('#sourceError',''); showError('#processError',''); }
       function setProgress(show,title='',percent=0,status=''){ $('#progressCard').classList.toggle('is-visible',show); $('#progressTitle').textContent=title; $('#progressPercent').textContent=`${Math.round(percent)}%`; $('#progressFill').style.width=`${Math.max(0,Math.min(100,percent))}%`; $('#progressStatus').textContent=status; }
@@ -901,8 +904,8 @@
       function drawWave(canvas,data){
         const ctx=canvas.getContext('2d'); const dpr=Math.min(window.devicePixelRatio||1,2); const rect=canvas.getBoundingClientRect(); const w=Math.max(320,Math.floor(rect.width*dpr)), h=Math.floor((parseFloat(getComputedStyle(canvas).height)||82)*dpr); if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
         ctx.clearRect(0,0,w,h); ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--line').trim()||'#dadbd6'; ctx.lineWidth=1*dpr; ctx.beginPath(); ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke(); if(!data?.length)return;
-        const step=Math.max(1,Math.floor(data.length/w)); ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#16624f';ctx.lineWidth=1*dpr;ctx.beginPath();
-        for(let x=0;x<w;x++){ let min=1,max=-1; const start=x*step,end=Math.min(data.length,start+step); for(let i=start;i<end;i++){const v=data[i];if(v<min)min=v;if(v>max)max=v;} if(end<=start){min=max=0;} const y1=(1-max)*h/2,y2=(1-min)*h/2;ctx.moveTo(x,y1);ctx.lineTo(x,y2);} ctx.stroke();
+        ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#16624f';ctx.lineWidth=1*dpr;ctx.beginPath();
+        for(let x=0;x<w;x++){ let min=1,max=-1; const start=Math.floor(x*data.length/w),end=Math.min(data.length,Math.max(start+1,Math.ceil((x+1)*data.length/w))); for(let i=start;i<end;i++){const v=data[i];if(v<min)min=v;if(v>max)max=v;} if(end<=start){min=max=0;} const y1=(1-max)*h/2,y2=(1-min)*h/2;ctx.moveTo(x,y1);ctx.lineTo(x,y2);} ctx.stroke();
       }
       function redrawAll(){ if(state.sourcePcm) drawWave($('#sourceWaveCanvas'),state.sourcePcm); if(state.result){ const original=getResultOriginal(); drawWave($('#beforeWaveCanvas'),original); drawWave($('#afterWaveCanvas'),state.result); } }
       window.addEventListener('resize',()=>requestAnimationFrame(redrawAll));
