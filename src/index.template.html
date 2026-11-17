@@ -568,12 +568,25 @@
     @media (max-width: 600px) {
       .local-badge { display: none; }
       body.has-mobile-bottom-bar { padding-bottom: calc(var(--app-mobile-bottom-bar-height) + env(safe-area-inset-bottom)); }
-      .desktop-run-button, .desktop-save-button { display: none !important; }
+      .desktop-save-button { display: none !important; }
       .app-mobile-bottom-bar { position: fixed; z-index: 80; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in srgb, var(--line) 82%, transparent); background: rgba(255,255,255,.94); box-shadow: 0 -8px 24px rgba(20,22,20,.06); backdrop-filter: blur(18px) saturate(1.35); }
       .app-mobile-bottom-item { min-width: 0; min-height: 54px; padding: 5px 4px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); display: grid; place-items: center; align-content: center; gap: 3px; font: inherit; font-size: 10px; font-weight: 750; cursor: pointer; }
       .app-mobile-bottom-item svg { width: 21px; height: 21px; }
       .app-mobile-bottom-item.primary:not(:disabled) { color: var(--accent); background: var(--accent-soft); }
       .app-mobile-bottom-item:disabled { opacity: .36; cursor: default; background: transparent; }
+      #previewButton:not(:disabled) { border-color: var(--accent); background: var(--accent); color: #fff; }
+      #previewButton:not(:disabled) .action-caption { color: rgba(255,255,255,.84); }
+      #processButton { border-color: var(--line); background: var(--surface); color: var(--text); }
+      #processButton .action-caption { color: var(--muted); }
+      .app-mobile-bottom-bar.is-processing .app-mobile-bottom-item { display: none; }
+      .app-mobile-processing { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 10px; min-height: 54px; }
+      .app-mobile-progress-main { min-width: 0; display: grid; gap: 7px; }
+      .app-mobile-progress-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+      .app-mobile-progress-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 750; }
+      .app-mobile-progress-percent { font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+      .app-mobile-progress-track { height: 5px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb,var(--accent) 15%, #fff); }
+      .app-mobile-progress-fill { height: 100%; width: 0; border-radius: inherit; background: var(--accent); }
+      .app-mobile-cancel { min-width: 76px; min-height: 44px; padding: 8px 11px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
       .app-toast { bottom: calc(var(--app-mobile-bottom-bar-height) + 12px + env(safe-area-inset-bottom)); }
     }
 
@@ -781,8 +794,15 @@
 
   <nav class="app-mobile-bottom-bar" id="appMobileBottomBar" aria-label="Mobile actions">
     <button class="app-mobile-bottom-item" id="mobileSourceButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M5 13v6h14v-6"/></svg><span data-i18n="mobileFile">音声</span></button>
-    <button class="app-mobile-bottom-item primary" id="mobileProcessButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h3l2-7 4 13 3-9 2 5h4"/></svg><span data-i18n="mobileClean">ノイズ軽減</span></button>
+    <button class="app-mobile-bottom-item primary" id="mobileProcessButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h3l2-7 4 13 3-9 2 5h4"/></svg><span id="mobileProcessLabel">10秒試す</span></button>
     <button class="app-mobile-bottom-item" id="mobileSaveButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4M8 16h8"/></svg><span data-i18n="mobileSave">保存</span></button>
+    <div class="app-mobile-processing" id="mobileProcessing" hidden role="status" aria-live="polite">
+      <div class="app-mobile-progress-main">
+        <div class="app-mobile-progress-row"><span class="app-mobile-progress-title" id="mobileProgressTitle">ノイズ低減中</span><span class="app-mobile-progress-percent" id="mobileProgressPercent">0%</span></div>
+        <div class="app-mobile-progress-track" aria-hidden="true"><div class="app-mobile-progress-fill" id="mobileProgressFill"></div></div>
+      </div>
+      <button class="app-mobile-cancel" id="mobileCancelButton" type="button" data-i18n="cancelProcess">キャンセル</button>
+    </div>
   </nav>
 
   <script>
@@ -838,7 +858,7 @@
           resultTitle:'処理結果', before:'元の音声', after:'処理後', previewResult:'10秒プレビュー', fullResult:'ファイル全体', outputFilename:'出力ファイル名', outputFilenameHint:'拡張子は自動で .wav が付きます', saveWav:'WAVで保存', outputNote:'保存される音声は16 kHz・モノラルのPCM WAVです。',
           buildInfo:'技術情報', modelLabel:'モデル', appVersion:'アプリバージョン', dependencies:'内包依存数', footer:'音声のクリーニングはブラウザー内で完結',
           helpBasicsTitle:'基本操作', helpStep1:'音声または動画を選びます。必要ならブラウザーで直接録音できます。', helpStep2:'波形上のシークバーを動かして位置を選び、「現在位置から10秒試す」で確認します。良ければ全体を処理します。', helpStep3:'処理後は同じ再生位置のまま元音声と処理後を切り替えて確認し、WAVで保存します。', helpPrivacyTitle:'プライバシー', helpPrivacyBody:'音声ファイル、録音内容、処理結果はブラウザー内だけで扱われ、このアプリから外部へ送信されません。実行時通信もCSPで遮断しています。', helpNotesTitle:'注意事項', helpNoteFormat:'読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。', helpNoteOutput:'処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。', helpNoteLimits:'他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。', helpNoteMic:'マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。', helpModelTitle:'使用モデル', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。', helpOffline:'配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。',
-          mobileFile:'音声', mobileClean:'ノイズ軽減', mobileSave:'保存', saved:'WAVのダウンロードを開始しました', cancelled:'処理をキャンセルしました', decoded:'音声を読み込みました', recordingStarted:'録音を開始しました', recordingStopped:'録音を停止しました',
+          mobileFile:'音声', mobileClean:'ノイズ軽減', mobileTryTen:'10秒試す', mobileCleanAll:'全体を処理', mobileSave:'保存', saved:'WAVのダウンロードを開始しました', cancelled:'処理をキャンセルしました', decoded:'音声を読み込みました', recordingStarted:'録音を開始しました', recordingStopped:'録音を停止しました',
           loadingSource:'音声を読み込んでいます…', replaceConfirmTitle:'音声を置き換えますか？', replaceConfirmMessage:'現在の音声と処理結果は、このタブから消えます。元のファイルやダウンロード済みのWAVは削除されません。', replaceCancel:'キャンセル', replaceConfirmAction:'置き換える', recordingEmpty:'録音データがありません。もう一度録音してください。',
           previewNotSaveable:'10秒プレビューは保存できません。全体を処理するとWAVを保存できます。', savePreviousFull:'保存対象: 前回のファイル全体の処理結果（表示中の10秒プレビューではありません）', saveCurrentFull:'保存対象: ファイル全体の処理結果',
           fileTooLarge:'ファイルが大きすぎます。250 MB以下のファイルを選んでください。', durationTooLong:'60分を超える音声には対応していません。', decodeFailed:'このファイルを音声として読み込めませんでした。別の形式を試してください。', runtimeFailed:'ノイズ低減エンジンを開始できませんでした。WebAssembly SIMD対応ブラウザーでお試しください。', processFailed:'ノイズ低減処理に失敗しました。', micUnavailable:'このブラウザーではマイク録音を利用できません。', micDenied:'マイクを開始できませんでした。権限やHTTPS/localhostでの利用を確認してください。'
@@ -851,7 +871,7 @@
           resultTitle:'Result', before:'Original', after:'Cleaned', previewResult:'10-second preview', fullResult:'Whole file', outputFilename:'Output filename', outputFilenameHint:'The .wav extension is added automatically', saveWav:'Save WAV', outputNote:'Saved audio is 16 kHz mono PCM WAV.',
           buildInfo:'Technical information', modelLabel:'Model', appVersion:'App version', dependencies:'Embedded dependencies', footer:'Voice cleaning stays in the browser',
           helpBasicsTitle:'Basics', helpStep1:'Choose an audio or video file, or record directly in the browser when microphone access is available.', helpStep2:'Move the seek bar on the waveform, try 10 seconds there, and process the whole file if you like the result.', helpStep3:'Switch between original and cleaned audio at the same playback position, then save the result as WAV.', helpPrivacyTitle:'Privacy', helpPrivacyBody:'Audio files, recordings, and results stay in the browser and are not sent outside this app. CSP also blocks runtime network access.', helpNotesTitle:'Notes', helpNoteFormat:'Readable formats depend on your browser audio decoder. Unsupported codecs or containers cannot be loaded.', helpNoteOutput:'Audio is converted to 16 kHz mono for processing. This tool targets intelligible speech rather than high-fidelity music conversion.', helpNoteLimits:'Other voices, music, strong reverberation, and transient noise may remain. Listen to important output after saving.', helpNoteMic:'Microphone recording depends on browser permissions and secure-context rules. If file:// is blocked, use HTTPS or localhost.', helpModelTitle:'Model', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) runs locally through WebAssembly.', helpOffline:'The distributable HTML embeds the required code and WASM and does not need a network connection while processing.',
-          mobileFile:'Audio', mobileClean:'Clean', mobileSave:'Save', saved:'WAV download started', cancelled:'Processing cancelled', decoded:'Audio loaded', recordingStarted:'Recording started', recordingStopped:'Recording stopped',
+          mobileFile:'Audio', mobileClean:'Clean', mobileTryTen:'Try 10 sec', mobileCleanAll:'Clean all', mobileSave:'Save', saved:'WAV download started', cancelled:'Processing cancelled', decoded:'Audio loaded', recordingStarted:'Recording started', recordingStopped:'Recording stopped',
           loadingSource:'Loading audio…', replaceConfirmTitle:'Replace audio?', replaceConfirmMessage:'Your current audio and processed results will be removed from this tab. Original files and previously downloaded WAVs are not deleted.', replaceCancel:'Cancel', replaceConfirmAction:'Replace audio', recordingEmpty:'No audio was recorded. Please try recording again.',
           previewNotSaveable:'A 10-second preview cannot be saved. Process the whole file to save WAV.', savePreviousFull:'Saving: previous whole-file result (not the 10-second preview being shown)', saveCurrentFull:'Saving: whole-file result',
           fileTooLarge:'The file is too large. Choose a file under 250 MB.', durationTooLong:'Audio longer than 60 minutes is not supported.', decodeFailed:'This file could not be decoded as audio. Try another format.', runtimeFailed:'Could not start the noise-reduction engine. Try a browser with WebAssembly SIMD support.', processFailed:'Noise reduction failed.', micUnavailable:'Microphone recording is not available in this browser.', micDenied:'Could not start the microphone. Check permission and HTTPS/localhost requirements.'
@@ -870,6 +890,7 @@
         $('#languageButton').textContent=language==='ja'?'EN':'JA';
         $('#recordButtonLabel').textContent=recording ? t('stopRecording') : t('record');
         updateResultLabels();
+        updateMobileControls();
       }
 
       const toast=$('#appToast'), toastMessage=$('#appToastMessage'), toastAction=$('#appToastAction');
@@ -889,10 +910,42 @@
       function formatBytes(bytes){ if(bytes<1024*1024) return `${(bytes/1024).toFixed(0)} KB`; return `${(bytes/1024/1024).toFixed(bytes>10*1024*1024?0:1)} MB`; }
       function safeStem(name){ return (name||APP_CONFIG.slug).replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim().slice(0,110) || APP_CONFIG.slug; }
       function outputName(){ const raw=$('#outputFilename').value; return `${safeStem(raw)}.wav`; }
-      function setPhase(phase){ state.phase=phase; const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing'; const locked=busy||recording||requestingMic; const ready=Boolean(state.sourcePcm)&&!locked; $('#previewButton').disabled=!ready; $('#processButton').disabled=!ready; $('#mobileProcessButton').disabled=!ready; $('#chooseFileButton').disabled=locked; $('#replaceButton').disabled=locked; $('#fileInput').disabled=locked; $('#fileFallbackButton').disabled=locked; $('#fileFallbackInput').disabled=locked; $('#recordButton').disabled=busy||requestingMic||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')); $('#cancelButton').disabled=!(phase==='loading-runtime'||phase==='processing'); $('#mobileSaveButton').disabled=!state.fullResult||locked; $('#saveButton').disabled=!state.fullResult||locked; }
+      function updateMobileControls(){ $('#mobileProcessLabel').textContent=t(state.result ? 'mobileCleanAll' : 'mobileTryTen'); }
+      function setPhase(phase){
+        state.phase=phase;
+        const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing';
+        const denoising=phase==='loading-runtime'||phase==='processing';
+        const locked=busy||recording||requestingMic, ready=Boolean(state.sourcePcm)&&!locked;
+        $('#previewButton').disabled=!ready;
+        $('#processButton').disabled=!ready;
+        $('#mobileProcessButton').disabled=!ready;
+        $('#chooseFileButton').disabled=locked;
+        $('#replaceButton').disabled=locked;
+        $('#fileInput').disabled=locked;
+        $('#fileFallbackButton').disabled=locked;
+        $('#fileFallbackInput').disabled=locked;
+        $('#recordButton').disabled=busy||requestingMic||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined'));
+        $('#cancelButton').disabled=!denoising;
+        $('#mobileCancelButton').disabled=!denoising;
+        $('#mobileProcessing').hidden=!denoising;
+        $('#appMobileBottomBar').classList.toggle('is-processing',denoising);
+        $('#mobileSaveButton').disabled=!state.fullResult||locked;
+        $('#saveButton').disabled=!state.fullResult||locked;
+        updateMobileControls();
+      }
       function showError(which,message){ const el=$(which); el.textContent=message; el.classList.toggle('is-visible',Boolean(message)); }
       function clearErrors(){ showError('#sourceError',''); showError('#processError',''); }
-      function setProgress(show,title='',percent=0,status=''){ $('#progressCard').classList.toggle('is-visible',show); $('#progressTitle').textContent=title; $('#progressPercent').textContent=`${Math.round(percent)}%`; $('#progressFill').style.width=`${Math.max(0,Math.min(100,percent))}%`; $('#progressStatus').textContent=status; }
+      function setProgress(show,title='',percent=0,status=''){
+        const value=Math.max(0,Math.min(100,percent)),pct=`${Math.round(value)}%`;
+        $('#progressCard').classList.toggle('is-visible',show);
+        $('#progressTitle').textContent=title;
+        $('#progressPercent').textContent=pct;
+        $('#progressFill').style.width=`${value}%`;
+        $('#progressStatus').textContent=status;
+        $('#mobileProgressTitle').textContent=title;
+        $('#mobileProgressPercent').textContent=pct;
+        $('#mobileProgressFill').style.width=`${value}%`;
+      }
 
       function drawWave(canvas,data){
         const ctx=canvas.getContext('2d'); const dpr=Math.min(window.devicePixelRatio||1,2); const rect=canvas.getBoundingClientRect(); const w=Math.max(320,Math.floor(rect.width*dpr)), h=Math.floor((parseFloat(getComputedStyle(canvas).height)||82)*dpr); if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
@@ -1170,7 +1223,7 @@
         audio.src=originalUrl;
         $('#originalToggle').classList.add('is-active');$('#cleanedToggle').classList.remove('is-active');
         $('#resultSection').hidden=false;
-        updateResultLabels();syncSeekGroup(seekGroups[1],0);
+        updateResultLabels();updateMobileControls();syncSeekGroup(seekGroups[1],0);
         requestAnimationFrame(()=>{
           drawWave($('#beforeWaveCanvas'),original);drawWave($('#afterWaveCanvas'),output);
           $('#resultSection').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
@@ -1261,8 +1314,8 @@
 
       $('#chooseFileButton').addEventListener('click',()=>$('#fileInput').click()); $('#replaceButton').addEventListener('click',()=>$('#fileInput').click()); $('#fileInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});$('#fileFallbackButton').addEventListener('click',()=>$('#fileFallbackInput').click());$('#fileFallbackInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});
       const drop=$('#dropZone'); ['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('is-over');})); ['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('is-over');})); drop.addEventListener('drop',e=>{const f=e.dataTransfer?.files?.[0];if(f)loadSource(f);});
-      $('#recordButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
-      $('#mobileSourceButton').addEventListener('click',()=>$('#sourceSection').scrollIntoView({behavior:'smooth',block:'start'})); $('#mobileProcessButton').addEventListener('click',()=>runDenoise('full')); $('#mobileSaveButton').addEventListener('click',saveResult);
+      $('#recordButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#mobileCancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
+      $('#mobileSourceButton').addEventListener('click',()=>$('#sourceSection').scrollIntoView({behavior:'smooth',block:'start'})); $('#mobileProcessButton').addEventListener('click',()=>runDenoise(state.result?'full':'preview')); $('#mobileSaveButton').addEventListener('click',saveResult);
       $('#languageButton').addEventListener('click',()=>{language=language==='ja'?'en':'ja';try{localStorage.setItem(`${APP_CONFIG.slug}:language`,language);}catch{}applyLanguage();});
       const help=$('#helpDialog');$('#helpButton').addEventListener('click',()=>help.showModal());$('#closeHelpButton').addEventListener('click',()=>help.close());help.addEventListener('click',e=>{if(e.target!==e.currentTarget)return;const r=help.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)help.close();});
 
