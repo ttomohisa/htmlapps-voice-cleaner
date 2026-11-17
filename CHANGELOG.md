@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Prevent canceled engine startup and late Worker callbacks from restarting or overwriting noise-reduction results; fix transferred-buffer progress timing.
+- Decode replacement audio before confirming, keeping prior audio, WAV results, and filename when canceled or invalid.
+- Preserve the last whole-file WAV through previews, and identify the result used by Save.
+- Keep microphone recording exclusive, ensure HTML hidden sections stay hidden, cover waveform tails, and guard rapid Before/After playback switches.
+- Expand Chromium browser regression coverage for these transitions.
+
+
 - Hide the phone informational footer and place existing build metadata at the end of Help, preserving functional controls and keyboard access.
  (PR #1)
 
