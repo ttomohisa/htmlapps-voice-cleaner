@@ -6,7 +6,7 @@
 
 - Simplify Japanese and English intro copy, remove redundant feature cards, and hide the local-processing badge and informational footer on phone widths.
 - Improve phone workflow: retain direct whole-file cleanup as the primary visible action, with an optional 10-second preview, comparison, and fixed-bar progress/cancel controls.
-- Hide the mobile header on downward scrolling and bring it back on upward scrolling, while retaining keyboard focus accessibility and reduced-motion support.
+- Show the mobile header only at the top of the document rather than keeping it sticky or revealing it while scrolling; preserve sticky desktop behavior.
 - Fix clipping of loaded audio cards and native players on narrow screens, including long filenames.
 - Keep audio and WAV results intact when replacing an invalid file or canceling replacement. Make the dialog close icon functional.
 - Make the 10-second preview work after playback reaches the end; retain the last full WAV even after subsequent previews.
