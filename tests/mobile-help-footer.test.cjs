@@ -13,3 +13,18 @@ test('intro is concise and duplicate feature cards are removed',()=>{
 test('local processing badge is hidden only on phone widths',()=>{
   assert.match(html,/@media \(max-width: 600px\)\s*\{\s*\.local-badge\s*\{\s*display:\s*none;/);
 });
+
+test('release is tied to main and a new SemVer tag',()=>{
+  const cfg=JSON.parse(fs.readFileSync('app.config.json','utf8'));
+  const workflow=fs.readFileSync('.github/workflows/deploy-pages.yml','utf8');
+  assert.match(cfg.version,/^\\d+\\.\\d+\\.\\d+$/);
+  assert.ok(workflow.includes('    branches:\\n      - main'.replace('\\n','\\n')),'main push trigger');
+  assert.match(workflow,/release:\\s*\\n\\s*name: Tag and publish GitHub Release/);
+  assert.ok(workflow.includes("if: github.event_name == 'push'"));
+  assert.ok(workflow.includes('needs: build'));
+  assert.ok(workflow.includes('permissions:\\n      contents: write'.replace('\\n','\\n')));
+  assert.ok(workflow.includes('gh release create'));
+  assert.ok(workflow.includes('actions/download-artifact@v8'));
+  assert.ok(workflow.includes('--target "$GITHUB_SHA"'));
+  assert.ok(workflow.includes('sha256sum'));
+});
