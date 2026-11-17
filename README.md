@@ -131,7 +131,7 @@ pwsh -NoProfile -File .\scripts\check-repository.ps1
 
 Use `scripts/update-dependency.ps1` for reviewed dependency updates. Versions are pinned, and `dependencies.lock.json` is checked against the downloaded npm tarball SHA-256 during builds. Automated update discovery does not automatically install or commit new dependency versions.
 
-CI validates both standalone HTML formats, matching brand/favicon images, CSP, dependency locks, unresolved placeholders, and actual GTCRN inference plus WAV export in a browser.
+CI validates both standalone HTML formats, matching brand/favicon images, CSP, dependency locks, unresolved placeholders, and actual GTCRN inference plus WAV export in a browser. It also adds fan-like noise to a [public-domain recording of a human speaker](tests/fixtures/README.md), and checks for lost speech, clipping and excessive noise in quiet sections. These numerical checks do not replace listening tests on real phones.
 
 ## Privacy and runtime network protection
 
