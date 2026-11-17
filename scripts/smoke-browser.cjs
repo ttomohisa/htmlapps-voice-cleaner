@@ -179,12 +179,24 @@ const server = http.createServer((req, res) => {
         terminate(){this.terminated=true;}
       };
     });
+    assert.match(await page.locator('#mobileProcessLabel').textContent(),/Try 10 sec|10秒試す/);
+    assert.ok(await page.locator('#processButton').isVisible(),'Direct full-file action remains available on phones');
     await page.locator('#mobileProcessButton').click();
     await page.waitForFunction(()=>window.__fakeWorkers.length===1);
-    await page.locator('#cancelButton').click();
+    assert.ok(await page.locator('#mobileProcessing').isVisible(),'Processing progress is visible in fixed phone bar');
+    assert.ok(await page.locator('#mobileCancelButton').isVisible(),'Phone cancellation is reachable without scrolling');
+    assert.ok(await page.locator('#mobileProcessButton').isHidden(),'Processing replaces the phone action bar');
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Phone progress does not overflow horizontally');
+    await page.locator('#mobileCancelButton').click();
+    assert.ok(await page.locator('#mobileProcessing').isHidden(),'Phone cancel returns to normal actions');
     assert.ok(await page.locator('#resultSection').isHidden(),'Cancel should keep the new source without results');
+    assert.match(await page.locator('#mobileProcessLabel').textContent(),/Try 10 sec|10秒試す/);
     await page.locator('#mobileProcessButton').click();
-    await page.waitForFunction(()=>document.querySelector('#resultContext').textContent.includes('0:03'));
+    await page.waitForFunction(()=>document.querySelector('#resultSubtitle').textContent.match(/10.second preview|10秒プレビュー/),null,{timeout:10000});
+    assert.ok(await page.locator('#mobileSaveButton').isDisabled(),'Preview does not permit saving a partial WAV');
+    assert.match(await page.locator('#mobileProcessLabel').textContent(),/Clean all|全体を処理/);
+    await page.locator('#mobileProcessButton').click();
+    await page.waitForFunction(()=>document.querySelector('#resultContext').textContent.includes('0:03') && !document.querySelector('#mobileSaveButton').disabled);
     await page.waitForTimeout(220);
     assert.ok((await page.locator('#resultContext').textContent()).includes('0:03'),'Late canceled Worker overwrote the current run');
     assert.ok(await page.locator('#mobileSaveButton').isEnabled());
