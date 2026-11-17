@@ -24,7 +24,7 @@ Once published on GitHub Pages, Voice Cleaner needs no installation or registrat
 
 - **Reduce background noise** — GTCRN runs in WebAssembly to improve the intelligibility of speech mixed with steady noises such as fans, air conditioning, or hiss. Results vary with the recording.
 - **Open audio or video** — Choose or drag and drop WAV, MP3, M4A, AAC, OGG, WebM, MP4 and other browser-decodable files. Actual support varies by browser.
-- **Record from a microphone** — Grant permission and make a new recording in the browser. This does not process live calls in real time.
+- **Record from a microphone** — Grant permission and make a new recording in the browser. This does not process live calls in real time. You can also record again after loading audio.
 - **Try just 10 seconds** — Choose a start point on the waveform and listen to a short cleaned sample before processing the whole file.
 - **Conservative speech-level restoration** — When suppression appears to make speech quieter, apply a small peak-limited gain of up to approximately +2.6 dB. Silence and steady noise should remain unchanged; residual noise may also increase slightly, and not every recording is adjusted.
 - **Compare Before / After** — Switch original and cleaned audio at the same playback position. Interactive waveform seek bars support clicking, tapping, dragging, and synchronized seeking across both result waveforms.
