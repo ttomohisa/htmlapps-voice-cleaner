@@ -17,7 +17,16 @@ Version 1.0.1. Browser Kitty. Primary purpose: locally reduce background noise i
 - Result: original / cleaned synchronized A/B playback, interactive waveform seek bar with linked original/cleaned playheads, editable filename and WAV save.
 - Error: provide a localized error, preserve the current source and last successful results, and allow retry.
 
+## Phone workflow
+
+- The primary phone footer action runs a 10-second preview until there is a result, then offers whole-file processing; full processing is also directly available in the main panel without a prerequisite.
+- A fixed phone progress/cancel surface replaces the three footer actions during runtime initialization or processing. It must stay operable without scrolling and clear on cancel, error, or completion.
+- Preserve the source/result and last full WAV when canceling or retrying. Labels and progress must work in both Japanese and English.
+
 ## Audio and export
+
+- A conservative loudness compensation may run after GTCRN. Compare original/cleaned levels in louder, dynamically varying regions; skip silence and steady noise. Cap at 1.35x (approximately +2.6 dB) and peak at 0.98 to prevent clipping. Apply identically to preview/full playback and WAV export; never modify the original.
+- This is a heuristic rather than speech recognition. Residual noise may be amplified, so quality checks must compare real recordings before accepting future changes.
 - File types depend on `decodeAudioData` availability.
 - Processing converts input to 16 kHz mono.
 - Frame process has 256-sample delay, compensated by flush/trim before preview/export.
