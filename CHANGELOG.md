@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 1.0.1 — Bug fixes and streamlined interface
+
+- Simplify the hero, remove duplicate feature cards and hide the local-processing badge on phone layouts.
+- Prepare automated tags and GitHub Releases when a new app version is merged into main.
+
+
 - Prevent canceled engine startup and late Worker callbacks from restarting or overwriting noise-reduction results; fix transferred-buffer progress timing.
 - Decode replacement audio before confirming, keeping prior audio, WAV results, and filename when canceled or invalid.
 - Preserve the last whole-file WAV through previews, and identify the result used by Save.
