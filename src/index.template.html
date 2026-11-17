@@ -503,6 +503,8 @@
     .source-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 780; }
     .source-meta { margin-top: 2px; color: var(--muted); font-size: 11px; }
     .source-replace { flex: 0 0 auto; white-space: nowrap; }
+    .source-retake { display: flex; justify-content: flex-end; min-width: 0; }
+    .source-retake .record-button { min-height: 44px; }
     .wave-wrap { position: relative; min-width: 0; max-width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #fbfbf9; }
     .wave-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 0; color: var(--muted); font-size: 10px; font-weight: 760; }
     .wave-canvas { display: block; width: 100%; height: 92px; }
@@ -656,6 +658,7 @@
               <div class="source-summary-main"><div class="source-name" id="sourceName">—</div><div class="source-meta" id="sourceMeta">—</div></div>
               <button class="button subtle-button source-replace" id="replaceButton" type="button" data-i18n="replace">変更</button>
             </div>
+            <div class="source-retake"><button class="button subtle-button record-button" id="recordAgainButton" type="button"><span class="record-dot" aria-hidden="true"></span><span id="recordAgainButtonLabel" data-i18n="record">録音する</span></button></div>
             <div class="wave-wrap">
               <div class="wave-label"><span data-i18n="originalWave">元の音声</span><span class="wave-position" id="sourceWaveDuration">0:00 / 0:00</span></div>
               <div class="wave-stage">
@@ -889,7 +892,9 @@
         document.querySelectorAll('[data-i18n-title]').forEach(el=>el.title=t(el.dataset.i18nTitle));
         document.querySelectorAll('[data-i18n-aria-label]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.i18nAriaLabel)));
         $('#languageButton').textContent=language==='ja'?'EN':'JA';
-        $('#recordButtonLabel').textContent=recording ? t('stopRecording') : t('record');
+        const currentRecordLabel=recording ? `${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}` : t('record');
+        $('#recordButtonLabel').textContent=currentRecordLabel;
+        $('#recordAgainButtonLabel').textContent=currentRecordLabel;
         updateResultLabels();
         updateMobileControls();
       }
@@ -925,7 +930,9 @@
         $('#fileInput').disabled=locked;
         $('#fileFallbackButton').disabled=locked;
         $('#fileFallbackInput').disabled=locked;
-        $('#recordButton').disabled=busy||requestingMic||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined'));
+        const recordDisabled=busy||requestingMic||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined'));
+        $('#recordButton').disabled=recordDisabled;
+        $('#recordAgainButton').disabled=recordDisabled;
         $('#cancelButton').disabled=!denoising;
         $('#mobileCancelButton').disabled=!denoising;
         $('#mobileProcessing').hidden=!denoising;
@@ -1315,7 +1322,7 @@
 
       async function toggleRecording(){
         if(recording){
-          if(recorder?.state==='recording'){recorder.stop();$('#recordButton').disabled=true;}
+          if(recorder?.state==='recording'){recorder.stop();$('#recordButton').disabled=true;$('#recordAgainButton').disabled=true;}
           return;
         }
         if(requestingMic||['loading-source','loading-runtime','processing'].includes(state.phase))return;
@@ -1336,8 +1343,8 @@
           recorder.onstop=async()=>{
             recording=false;requestingMic=false;clearInterval(recordTimer);
             recorderStream?.getTracks().forEach(track=>track.stop());recorderStream=null;
-            $('#recordButton').classList.remove('is-recording');
-            $('#recordButtonLabel').textContent=t('record');
+            $('#recordButton').classList.remove('is-recording');$('#recordAgainButton').classList.remove('is-recording');
+            $('#recordButtonLabel').textContent=t('record');$('#recordAgainButtonLabel').textContent=t('record');
             setPhase(state.sourcePcm?'ready':'empty');
             const mime=recorder.mimeType||'audio/webm';
             const ext=mime.includes('mp4')?'m4a':mime.includes('ogg')?'ogg':'webm';
@@ -1349,10 +1356,12 @@
           };
           recorder.start(250);requestingMic=false;recording=true;setPhase('recording');
           recordStartedAt=Date.now();
-          $('#recordButton').classList.add('is-recording');
+          $('#recordButton').classList.add('is-recording');$('#recordAgainButton').classList.add('is-recording');
           $('#recordButtonLabel').textContent=`${t('stopRecording')} 0:00`;
+          $('#recordAgainButtonLabel').textContent=`${t('stopRecording')} 0:00`;
           recordTimer=setInterval(()=>{
-            $('#recordButtonLabel').textContent=`${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}`;
+            const label=`${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}`;
+            $('#recordButtonLabel').textContent=label;$('#recordAgainButtonLabel').textContent=label;
           },500);
           window.AppToast.show({message:t('recordingStarted')});
         }catch(error){
@@ -1364,13 +1373,13 @@
 
       $('#chooseFileButton').addEventListener('click',()=>$('#fileInput').click()); $('#replaceButton').addEventListener('click',()=>$('#fileInput').click()); $('#fileInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});$('#fileFallbackButton').addEventListener('click',()=>$('#fileFallbackInput').click());$('#fileFallbackInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});
       const drop=$('#dropZone'); ['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('is-over');})); ['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('is-over');})); drop.addEventListener('drop',e=>{const f=e.dataTransfer?.files?.[0];if(f)loadSource(f);});
-      $('#recordButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#mobileCancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
+      $('#recordButton').addEventListener('click',toggleRecording); $('#recordAgainButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#mobileCancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
       $('#mobileSourceButton').addEventListener('click',()=>$('#sourceSection').scrollIntoView({behavior:'smooth',block:'start'})); $('#mobileProcessButton').addEventListener('click',()=>runDenoise(state.result?'full':'preview')); $('#mobileSaveButton').addEventListener('click',saveResult);
       $('#languageButton').addEventListener('click',()=>{language=language==='ja'?'en':'ja';try{localStorage.setItem(`${APP_CONFIG.slug}:language`,language);}catch{}applyLanguage();});
       const help=$('#helpDialog');$('#helpButton').addEventListener('click',()=>help.showModal());$('#closeHelpButton').addEventListener('click',()=>help.close());help.addEventListener('click',e=>{if(e.target!==e.currentTarget)return;const r=help.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)help.close();});
 
       $('#brandName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;$('#versionBadge').textContent=`v${APP_CONFIG.version}`;$('#footerName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;$('#buildVersion').textContent=APP_CONFIG.version;$('#dependencyCount').textContent=String(BUILD_MANIFEST.dependencies?.length||0);document.body.classList.add('has-mobile-bottom-bar'); setPhase('empty'); resetWaveSeeks(); applyLanguage();
-      if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined') $('#recordButton').disabled=true;
+      if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){ $('#recordButton').disabled=true;$('#recordAgainButton').disabled=true; }
       window.addEventListener('pagehide',()=>{stopProcessing(false);recorderStream?.getTracks().forEach(tr=>tr.stop());revokeObjectUrls();blobUrls.forEach(url=>URL.revokeObjectURL(url));blobUrls.clear();});
     })();
   </script>
