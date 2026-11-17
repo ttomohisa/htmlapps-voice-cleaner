@@ -100,6 +100,10 @@ This repository includes a workflow that builds, verifies, and deploys the app o
 
 The planned URL is [https://ttomohisa.github.io/htmlapps-voice-cleaner/](https://ttomohisa.github.io/htmlapps-voice-cleaner/). Changes in a pull request do not appear on GitHub Pages until they are merged into `main`. The URL may remain unavailable until Pages is enabled and a deployment succeeds.
 
+## Automatic tags and GitHub Releases
+
+Merging a pull request into `main` runs the GitHub Pages workflow, including build validation and a browser audio-processing test. If the checks pass and the version in `app.config.json` has no GitHub Release yet, the workflow creates the corresponding `vX.Y.Z` tag and GitHub Release. It attaches the standalone HTML, self-extracting HTML, ZIP, and SHA-256 checksums. Existing versions are not released twice. Update `app.config.json` before merging when a new release is needed. Manually dispatching the deployment workflow does not publish a release.
+
 ## Development and build layout
 
 ```text
