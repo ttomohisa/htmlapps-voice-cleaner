@@ -571,6 +571,7 @@
       /* On phones, show the header once at the top; scroll it with the document. */
       .app-header { position: static; }
       .local-badge { display: none; }
+      body.has-loaded-source .page-intro { display: none; }
       body.has-mobile-bottom-bar { padding-bottom: calc(var(--app-mobile-bottom-bar-height) + env(safe-area-inset-bottom)); }
       .desktop-save-button { display: none !important; }
       .app-mobile-bottom-bar { position: fixed; z-index: 80; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in srgb, var(--line) 82%, transparent); background: rgba(255,255,255,.94); box-shadow: 0 -8px 24px rgba(20,22,20,.06); backdrop-filter: blur(18px) saturate(1.35); }
@@ -926,6 +927,7 @@
       function updateMobileControls(){ $('#mobileProcessLabel').textContent=t(state.result ? 'mobileCleanAll' : 'mobileTryTen'); }
       function setPhase(phase){
         state.phase=phase;
+        document.body.classList.toggle('has-loaded-source',Boolean(state.sourcePcm));
         const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing';
         const denoising=phase==='loading-runtime'||phase==='processing';
         const locked=busy||recording||requestingMic, ready=Boolean(state.sourcePcm)&&!locked;
