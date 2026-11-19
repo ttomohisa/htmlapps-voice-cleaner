@@ -40,3 +40,11 @@ test('phone header appears only at the top and desktop remains sticky',()=>{
   assert.match(html,/\.app-header \{[\s\S]*?position: sticky;/);
   assert.doesNotMatch(html,/is-scroll-hidden|schedulePhoneHeader|headerScrollTravel/);
 });
+
+test('file drop icon uses downward arrow',()=>{
+  const match=html.match(/<div class="drop-zone-icon" aria-hidden="true">([\s\S]*?)<\/div>/);
+  assert.ok(match,'Drop zone icon should exist');
+  assert.match(match[1],/<path d="M12 3v11"\/>/);
+  assert.match(match[1],/<path d="m8 10 4 4 4-4"\/>/);
+  assert.match(match[1],/<path d="M5 16v4h14v-4"\/>/);
+});
