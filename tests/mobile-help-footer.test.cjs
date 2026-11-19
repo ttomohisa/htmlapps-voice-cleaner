@@ -10,6 +10,12 @@ test('intro is concise and duplicate feature cards are removed',()=>{
   assert.doesNotMatch(html,/id="aboutTitle"|notice-card/);
   assert.match(html,/introTitle:'Reduce noise in audio recordings'/);
 });
+test('loaded audio hides the complete hero on phones only',()=>{
+  assert.match(html,/@media \(max-width: 600px\)[\s\S]*?body\.has-loaded-source \.page-intro \{ display: none; \}/);
+  assert.match(html,/document\.body\.classList\.toggle\('has-loaded-source',Boolean\(state\.sourcePcm\)\)/);
+  assert.match(html,/<section class="page-intro" aria-labelledby="heroTitle">/);
+});
+
 test('local processing badge is hidden only on phone widths',()=>{
   assert.match(html,/@media \(max-width: 600px\)[\s\S]*?\.local-badge\s*\{\s*display:\s*none;/);
 });
