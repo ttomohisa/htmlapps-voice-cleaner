@@ -61,6 +61,7 @@ const server = http.createServer((req, res) => {
       if (url.startsWith('http') && !url.startsWith(origin)) logs.push('unexpected external request: ' + url);
     });
     await page.goto(origin + '/index.html', { waitUntil: 'load', timeout: 20000 });
+    assert.ok(await page.locator('.page-intro').isVisible(), 'Desktop hero remains visible on empty page');
     await page.locator('#fileInput').setInputFiles({
       name: 'test-speech-with-noise.wav',
       mimeType: 'audio/wav',
@@ -73,6 +74,7 @@ const server = http.createServer((req, res) => {
     }, null, { timeout: 20000 });
     const decodeError = await page.locator('#sourceError').textContent();
     assert.equal(decodeError, '', 'Input decode failed: ' + decodeError);
+    assert.ok(await page.locator('.page-intro').isVisible(), 'Desktop hero remains visible after loading audio');
     const sourceSeek = page.locator('#sourceWaveSeek');
     assert.ok(await sourceSeek.isEnabled(), 'Source waveform seek bar must be enabled');
     await sourceSeek.evaluate(el => {
@@ -110,6 +112,8 @@ const server = http.createServer((req, res) => {
     await page.locator('#cleanedToggle').click();
     await page.waitForFunction(()=>document.querySelector('#cleanedToggle').classList.contains('is-active') && Math.abs(document.querySelector('#resultAudio').currentTime - 1)<0.15,null,{timeout:10000});
     await page.setViewportSize({width:390,height:844});
+    assert.ok(await page.locator('.page-intro').isHidden(), 'Phone hero should disappear after audio loads');
+    assert.ok(await page.locator('#sourceSection').isVisible(), 'Audio panel remains visible without hero');
     await beforeSeek.scrollIntoViewIfNeeded();
     await beforeSeek.click(); // Native touch-sized slider interaction at the center.
     await page.waitForFunction(()=>Math.abs(document.querySelector('#resultAudio').currentTime - 1)<0.2,null,{timeout:10000});
@@ -174,6 +178,7 @@ const server = http.createServer((req, res) => {
     });
     await page.waitForFunction(()=>document.querySelector('#sourceError').textContent.trim().length>0);
     assert.equal(await page.locator('#sourceName').textContent(),'test-speech-with-noise.wav');
+    assert.ok(await page.locator('.page-intro').isHidden(),'Invalid replacement must not reveal the hero');
     assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Decode failure must retain full result');
     assert.equal(await page.locator('#outputFilename').inputValue(),'review-copy');
     const alternate={name:'replacement.wav',mimeType:'audio/wav',buffer:pcmWav(3)};
