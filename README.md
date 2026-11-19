@@ -24,8 +24,9 @@ Once published on GitHub Pages, Voice Cleaner needs no installation or registrat
 
 - **Reduce background noise** — GTCRN runs in WebAssembly to improve the intelligibility of speech mixed with steady noises such as fans, air conditioning, or hiss. Results vary with the recording.
 - **Open audio or video** — Choose or drag and drop WAV, MP3, M4A, AAC, OGG, WebM, MP4 and other browser-decodable files. Actual support varies by browser.
-- **Record from a microphone** — Grant permission and make a new recording in the browser. This does not process live calls in real time.
+- **Record from a microphone** — Grant permission and make a new recording in the browser. This does not process live calls in real time. You can also record again after loading audio.
 - **Try just 10 seconds** — Choose a start point on the waveform and listen to a short cleaned sample before processing the whole file.
+- **Conservative speech-level restoration** — When suppression appears to make speech quieter, apply a small peak-limited gain of up to approximately +2.6 dB. Silence and steady noise should remain unchanged; residual noise may also increase slightly, and not every recording is adjusted.
 - **Compare Before / After** — Switch original and cleaned audio at the same playback position. Interactive waveform seek bars support clicking, tapping, dragging, and synchronized seeking across both result waveforms.
 - **Export WAV** — After processing the whole recording, choose a filename and save a 16 kHz mono 16-bit PCM WAV file.
 - **Work on-device** — The model and runtime are embedded in a single HTML file, with Japanese and English UI for desktop and mobile.
@@ -60,7 +61,9 @@ The normal HTML build does not require Python or Node.js. It uses Windows PowerS
 4. **Process the entire recording** — If the result sounds useful, run “Clean the whole file.” Progress is displayed, and the operation can be cancelled.
 5. **Compare and save** — Switch between Original and Cleaned, seeking either result waveform to move both playheads. Edit the output filename, then save the WAV.
 
-The 10-second preview is for listening. **WAV export becomes available after processing the whole recording.** GTCRN uses a fixed processing mode; there is no noise-reduction strength slider.
+The 10-second preview is for listening. **WAV export becomes available after processing the whole recording.** Later previews retain the last complete WAV for the current audio, and the save section identifies which result will be downloaded. GTCRN uses a fixed processing mode; there is no noise-reduction strength slider.
+
+When replacing audio, the app first verifies that the new file can be decoded, then asks for confirmation. Canceling or decode failure leaves the current audio, result, and output filename intact. Canceling a running job prevents delayed results from being applied.
 
 ### Waveform controls
 
@@ -72,7 +75,7 @@ The 10-second preview is for listening. **WAV export becomes available after pro
 | `Home` / `End` while focused | Seek to the beginning / end |
 | Seek either Before / After waveform | Synchronize the two result positions |
 
-On mobile, the bottom navigation provides Audio, Clean, and Save actions. Save stays disabled until there is a complete processed result.
+On mobile, the bottom navigation provides Audio, Clean, and Save actions. Save stays disabled until there is a complete processed result, which remains available after later previews.
 
 ## Single HTML and offline use
 
@@ -97,6 +100,10 @@ This repository includes a workflow that builds, verifies, and deploys the app o
 3. Find the published URL in the GitHub Actions deployment output.
 
 The planned URL is [https://ttomohisa.github.io/htmlapps-voice-cleaner/](https://ttomohisa.github.io/htmlapps-voice-cleaner/). Changes in a pull request do not appear on GitHub Pages until they are merged into `main`. The URL may remain unavailable until Pages is enabled and a deployment succeeds.
+
+## Automatic tags and GitHub Releases
+
+Merging a pull request into `main` runs the GitHub Pages workflow, including build validation and a browser audio-processing test. If the checks pass and the version in `app.config.json` has no GitHub Release yet, the workflow creates the corresponding `vX.Y.Z` tag and GitHub Release. It attaches the standalone HTML, self-extracting HTML, ZIP, and SHA-256 checksums. Existing versions are not released twice. Update `app.config.json` before merging when a new release is needed. Manually dispatching the deployment workflow does not publish a release.
 
 ## Development and build layout
 
@@ -124,7 +131,7 @@ pwsh -NoProfile -File .\scripts\check-repository.ps1
 
 Use `scripts/update-dependency.ps1` for reviewed dependency updates. Versions are pinned, and `dependencies.lock.json` is checked against the downloaded npm tarball SHA-256 during builds. Automated update discovery does not automatically install or commit new dependency versions.
 
-CI validates both standalone HTML formats, matching brand/favicon images, CSP, dependency locks, unresolved placeholders, and actual GTCRN inference plus WAV export in a browser.
+CI validates both standalone HTML formats, matching brand/favicon images, CSP, dependency locks, unresolved placeholders, and actual GTCRN inference plus WAV export in a browser. It also adds fan-like noise to a [public-domain recording of a human speaker](tests/fixtures/README.md), and checks for lost speech, clipping and excessive noise in quiet sections. These numerical checks do not replace listening tests on real phones.
 
 ## Privacy and runtime network protection
 

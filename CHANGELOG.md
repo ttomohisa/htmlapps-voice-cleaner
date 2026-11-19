@@ -2,12 +2,21 @@
 
 ## Unreleased
 
-- Hide the phone informational footer and place existing build metadata at the end of Help, preserving functional controls and keyboard access.
- (PR #1)
+## 1.0.1 — Audio and mobile reliability
 
-- Added draggable, tappable, keyboard-accessible seek bars over source and comparison waveforms.
-- Waveform playheads track playback and both Before/After waveforms stay synchronized.
-
+- Simplify Japanese and English intro copy, remove redundant feature cards, and hide the local-processing badge and informational footer on phone widths.
+- Improve phone workflow: retain direct whole-file cleanup as the primary visible action, with an optional 10-second preview, comparison, and fixed-bar progress/cancel controls.
+- Show the mobile header only at the top of the document rather than keeping it sticky or revealing it while scrolling; preserve sticky desktop behavior.
+- Hide the hero title and explanatory text on phones after an audio or video file (including a completed recording) is successfully loaded; keep desktop and empty-state copy visible.
+- Fix clipping of loaded audio cards and native players on narrow screens, including long filenames.
+- Keep audio and WAV results intact when replacing an invalid file or canceling replacement. Make the dialog close icon functional.
+- Make the 10-second preview work after playback reaches the end; retain the last full WAV even after subsequent previews.
+- Guard engine initialization, canceled Workers and late results against stale callbacks; fix progress after transferable buffers and rapid Before/After switching.
+- Restore speech level conservatively (maximum approximately +2.6 dB) when noise reduction lowers it, with safeguards against clipping and boosting steady noise.
+- Keep microphone recording exclusive and allow recording again after a file or recording has already been loaded; retain the same recording format.
+- Preserve audio Blob URLs across back/forward cache restoration and localize loaded audio metadata and accessibility labels.
+- Improve waveform navigation, keyboard accessibility, hidden sections, and Help build metadata, with real-voice and synthetic browser regression tests.
+- Automatically create new version tags and GitHub Releases after a successful main build, with ZIP and checksum packaging validated on pull requests.
 
 ## 1.0.0 — Initial implementation
 

@@ -445,6 +445,9 @@
     }
 
 
+    /* The hidden attribute must also work on layout elements with author display rules. */
+    [hidden] { display: none !important; }
+
     /* Voice Cleaner */
     :root { --app-mobile-bottom-bar-height: 74px; }
     .brand-mark.wave-mark svg { width: 23px; height: 23px; }
@@ -454,7 +457,7 @@
     .vc-panel-title { margin: 0; font-size: 18px; letter-spacing: -.02em; }
     .vc-panel-desc { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
     .step-badge { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; min-width: 31px; height: 25px; padding: 0 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 10px; font-weight: 850; letter-spacing: .05em; }
-    .vc-panel-body { padding: 16px 20px 20px; }
+    .vc-panel-body { min-width: 0; padding: 16px 20px 20px; }
     .drop-zone { position: relative; display: grid; place-items: center; min-height: 190px; padding: 24px; border: 1.5px dashed var(--line-strong); border-radius: 14px; background: #fbfbf9; text-align: center; transition: border-color .16s ease, background .16s ease; }
     .drop-zone.is-over { border-color: var(--accent); background: var(--accent-soft); }
     .drop-zone-icon { display: grid; place-items: center; width: 48px; height: 48px; margin: 0 auto 10px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); }
@@ -492,15 +495,17 @@
     .subtle-button { min-height: 38px; padding: 7px 12px; font-size: 12px; }
     .record-button.is-recording { border-color: var(--danger); color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); }
     .record-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 999px; background: currentColor; vertical-align: 1px; }
-    .source-card { display: grid; gap: 14px; }
-    .source-summary { display: flex; align-items: center; gap: 12px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-muted); }
+    .source-card { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 14px; }
+    .source-summary { display: flex; align-items: center; min-width: 0; max-width: 100%; gap: 12px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-muted); }
     .source-summary-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: 0 0 auto; border-radius: 11px; background: var(--surface); color: var(--accent); }
     .source-summary-icon svg { width: 21px; height: 21px; }
-    .source-summary-main { min-width: 0; flex: 1; }
+    .source-summary-main { min-width: 0; flex: 1 1 0; overflow: hidden; }
     .source-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; font-weight: 780; }
     .source-meta { margin-top: 2px; color: var(--muted); font-size: 11px; }
-    .source-replace { flex: 0 0 auto; }
-    .wave-wrap { position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #fbfbf9; }
+    .source-replace { flex: 0 0 auto; white-space: nowrap; }
+    .source-retake { display: flex; justify-content: flex-end; min-width: 0; }
+    .source-retake .record-button { min-height: 44px; }
+    .wave-wrap { position: relative; min-width: 0; max-width: 100%; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #fbfbf9; }
     .wave-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 10px 0; color: var(--muted); font-size: 10px; font-weight: 760; }
     .wave-canvas { display: block; width: 100%; height: 92px; }
     .wave-stage { position: relative; isolation: isolate; }
@@ -511,8 +516,8 @@
     .wave-seek:disabled { cursor: default; }
     .wave-stage:focus-within { outline: 3px solid var(--focus); outline-offset: -3px; border-radius: 6px; }
     .wave-position { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--text); white-space: nowrap; }
-    .audio-row { display: grid; gap: 7px; }
-    audio { width: 100%; height: 42px; }
+    .audio-row { display: grid; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 7px; }
+    audio { display: block; width: 100%; max-width: 100%; min-width: 0; height: 42px; }
     .process-actions { display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); gap: 9px; }
     .action-tile { min-height: 74px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; text-align: left; }
     .action-tile:hover:not(:disabled) { border-color: var(--line-strong); background: var(--surface-hover); }
@@ -548,17 +553,12 @@
     .export-box .export-field { min-width: 0; }
     .export-box .button { min-height: 42px; }
     .output-note { grid-column: 1 / -1; margin: -2px 0 0; color: var(--muted); font-size: 10px; }
-    .notice-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
-    .notice-card { padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-    .notice-card svg { width: 20px; height: 20px; color: var(--accent); }
-    .notice-card h3 { margin: 9px 0 4px; font-size: 12px; }
-    .notice-card p { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
     .tiny-note { color: var(--muted); font-size: 10px; }
+    .source-loading { padding: 10px 12px; color: var(--muted); font-size: 12px; }
     .async-error { display: none; padding: 11px 12px; border: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line)); border-radius: 11px; background: color-mix(in srgb, var(--danger) 5%, var(--surface)); color: var(--danger); font-size: 11px; }
     .async-error.is-visible { display: block; }
     .app-mobile-bottom-bar { display: none; }
     @media (max-width: 720px) {
-      .notice-grid { grid-template-columns: 1fr; }
       .process-actions { grid-template-columns: 1fr; }
       .vc-panel-head { padding: 15px 14px 0; }
       .vc-panel-body { padding: 13px 14px 15px; }
@@ -568,13 +568,31 @@
       .output-note { grid-column: 1; }
     }
     @media (max-width: 600px) {
+      /* On phones, show the header once at the top; scroll it with the document. */
+      .app-header { position: static; }
+      .local-badge { display: none; }
+      body.has-loaded-source .page-intro { display: none; }
       body.has-mobile-bottom-bar { padding-bottom: calc(var(--app-mobile-bottom-bar-height) + env(safe-area-inset-bottom)); }
-      .desktop-run-button, .desktop-save-button { display: none !important; }
+      .desktop-save-button { display: none !important; }
       .app-mobile-bottom-bar { position: fixed; z-index: 80; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 4px; padding: 6px 10px calc(6px + env(safe-area-inset-bottom)); border-top: 1px solid color-mix(in srgb, var(--line) 82%, transparent); background: rgba(255,255,255,.94); box-shadow: 0 -8px 24px rgba(20,22,20,.06); backdrop-filter: blur(18px) saturate(1.35); }
       .app-mobile-bottom-item { min-width: 0; min-height: 54px; padding: 5px 4px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); display: grid; place-items: center; align-content: center; gap: 3px; font: inherit; font-size: 10px; font-weight: 750; cursor: pointer; }
       .app-mobile-bottom-item svg { width: 21px; height: 21px; }
       .app-mobile-bottom-item.primary:not(:disabled) { color: var(--accent); background: var(--accent-soft); }
       .app-mobile-bottom-item:disabled { opacity: .36; cursor: default; background: transparent; }
+      /* Whole-file cleanup is the primary task; the short preview is optional. */
+      #processButton { order: -1; }
+      #previewButton { border-color: var(--line); background: var(--surface); color: var(--text); }
+      #previewButton .action-caption { color: var(--muted); }
+      #previewButton:hover:not(:disabled) { border-color: var(--line-strong); background: var(--surface-hover); }
+      .app-mobile-bottom-bar.is-processing .app-mobile-bottom-item { display: none; }
+      .app-mobile-processing { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 10px; min-height: 54px; }
+      .app-mobile-progress-main { min-width: 0; display: grid; gap: 7px; }
+      .app-mobile-progress-row { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+      .app-mobile-progress-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 750; }
+      .app-mobile-progress-percent { font-size: 12px; color: var(--accent); font-variant-numeric: tabular-nums; font-weight: 800; }
+      .app-mobile-progress-track { height: 5px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb,var(--accent) 15%, #fff); }
+      .app-mobile-progress-fill { height: 100%; width: 0; border-radius: inherit; background: var(--accent); }
+      .app-mobile-cancel { min-width: 76px; min-height: 44px; padding: 8px 11px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); color: var(--text); font: inherit; font-size: 12px; font-weight: 750; cursor: pointer; }
       .app-toast { bottom: calc(var(--app-mobile-bottom-bar-height) + 12px + env(safe-area-inset-bottom)); }
     }
 
@@ -589,7 +607,7 @@
       <div class="brand">
         <div class="brand-mark" aria-hidden="true"><img id="appBrandIcon" src="__APP_ICON_DATA_URI__" alt=""></div>
         <div class="brand-copy">
-          <p class="brand-name"><span id="brandName">Voice Cleaner</span><span class="version-badge" id="versionBadge">v1.0.0</span></p>
+          <p class="brand-name"><span id="brandName">Voice Cleaner</span><span class="version-badge" id="versionBadge">v1.0.1</span></p>
           <p class="brand-meta" data-i18n="brandMeta">背景ノイズを軽減 · Before / After比較</p>
         </div>
       </div>
@@ -605,8 +623,8 @@
   <main class="main">
     <section class="page-intro" aria-labelledby="heroTitle">
       <div>
-        <h2 id="heroTitle" data-i18n="introTitle">録音の背景ノイズを軽減</h2>
-        <p data-i18n="lead">音声や動画の声を聞き取りやすくします。処理はブラウザー内だけで完結します。</p>
+        <h2 id="heroTitle" data-i18n="introTitle">音声のノイズを減らす</h2>
+        <p data-i18n="lead">音声・動画の背景ノイズを減らして、WAVで保存します。</p>
       </div>
       <div class="local-badge">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg>
@@ -624,7 +642,7 @@
         <div class="vc-panel-body">
           <div class="drop-zone" id="dropZone">
             <div>
-              <div class="drop-zone-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M5 13v6h14v-6"/></svg></div>
+              <div class="drop-zone-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11"/><path d="m8 10 4 4 4-4"/><path d="M5 16v4h14v-4"/></svg></div>
               <h3 data-i18n="dropTitle">音声・動画をここにドロップ</h3>
               <p data-i18n="dropBody">WAV / MP3 / M4A / AAC / OGG / WebM / MP4 など。ファイルは外部へ送信されません。</p>
               <div class="source-actions">
@@ -643,6 +661,7 @@
               <div class="source-summary-main"><div class="source-name" id="sourceName">—</div><div class="source-meta" id="sourceMeta">—</div></div>
               <button class="button subtle-button source-replace" id="replaceButton" type="button" data-i18n="replace">変更</button>
             </div>
+            <div class="source-retake"><button class="button subtle-button record-button" id="recordAgainButton" type="button"><span class="record-dot" aria-hidden="true"></span><span id="recordAgainButtonLabel" data-i18n="record">録音する</span></button></div>
             <div class="wave-wrap">
               <div class="wave-label"><span data-i18n="originalWave">元の音声</span><span class="wave-position" id="sourceWaveDuration">0:00 / 0:00</span></div>
               <div class="wave-stage">
@@ -654,6 +673,7 @@
             </div>
             <div class="audio-row"><audio id="sourceAudio" controls preload="metadata"></audio><span class="tiny-note" data-i18n="previewPositionHint">波形をクリック・タップ・ドラッグして再生位置を変更できます。10秒プレビューはその位置から開始します。</span></div>
           </div>
+          <div id="sourceLoading" class="source-loading" role="status" aria-live="polite" data-i18n="loadingSource" hidden>音声を読み込んでいます…</div>
           <div class="async-error" id="sourceError" role="alert"></div>
         </div>
       </section>
@@ -685,7 +705,7 @@
         </div>
         <div class="vc-panel-body vc-stack">
           <div class="compare-card">
-            <div class="compare-switch" role="group" aria-label="Before / After">
+            <div class="compare-switch" role="group" data-i18n-aria-label="compareLabel" aria-label="処理前後の比較">
               <button id="originalToggle" type="button" class="is-active" data-i18n="before">元の音声</button>
               <button id="cleanedToggle" type="button" data-i18n="after">処理後</button>
             </div>
@@ -713,19 +733,13 @@
           <div class="export-box" id="exportBox">
             <label class="export-field" for="outputFilename"><span class="export-label" data-i18n="outputFilename">出力ファイル名</span><span class="filename-control"><input class="filename-input" id="outputFilename" type="text" maxlength="120" autocomplete="off" spellcheck="false" aria-describedby="outputFilenameHint"><span class="filename-extension" aria-hidden="true">.wav</span></span><span class="sr-only" id="outputFilenameHint" data-i18n="outputFilenameHint">拡張子は自動で .wav が付きます</span></label>
             <button class="button primary desktop-save-button" id="saveButton" type="button" data-i18n="saveWav">WAVで保存</button>
+            <p class="output-note" id="saveScope" aria-live="polite"></p>
             <p class="output-note" data-i18n="outputNote">保存される音声は16 kHz・モノラルのPCM WAVです。</p>
           </div>
         </div>
       </section>
 
-      <section class="section" aria-labelledby="aboutTitle">
-        <div class="section-head"><h2 class="section-title" id="aboutTitle" data-i18n="aboutTitle">このツールでできること</h2><p data-i18n="aboutLead">録音の声を聞き取りやすくするための軽量なノイズ低減です。</p></div>
-        <div class="notice-grid">
-          <article class="notice-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 12h3l2-7 4 14 3-9 2 5h2"/></svg><h3 data-i18n="noiseCardTitle">背景ノイズを軽減</h3><p data-i18n="noiseCardBody">エアコン、ファン、サー音など、声に重なる背景ノイズの低減に向いています。</p></article>
-          <article class="notice-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3 5 6v5c0 4.6 2.8 8 7 10 4.2-2 7-5.4 7-10V6z"/><path d="m9 12 2 2 4-5"/></svg><h3 data-i18n="privacyCardTitle">完全ローカル処理</h3><p data-i18n="privacyCardBody">ファイル、録音、処理結果はサーバーへ送信されません。モデルも配布HTMLに内包されます。</p></article>
-          <article class="notice-card"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v10"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg><h3 data-i18n="limitCardTitle">万能な音声修復ではありません</h3><p data-i18n="limitCardBody">他人の声、音楽、強い反響、突然の大音量は十分に除去できない場合があります。</p></article>
-        </div>
-      </section>
+
 
 
     </div>
@@ -769,7 +783,7 @@
       <ol><li data-i18n="helpStep1">音声または動画を選びます。必要ならブラウザーで直接録音できます。</li><li data-i18n="helpStep2">波形上のシークバーを動かして位置を選び、「現在位置から10秒試す」で確認します。良ければ全体を処理します。</li><li data-i18n="helpStep3">処理後は同じ再生位置のまま元音声と処理後を切り替えて確認し、WAVで保存します。</li></ol>
       <h3 data-i18n="helpPrivacyTitle">プライバシー</h3><p data-i18n="helpPrivacyBody">音声ファイル、録音内容、処理結果はブラウザー内だけで扱われ、このアプリから外部へ送信されません。実行時通信もCSPで遮断しています。</p>
       <h3 data-i18n="helpNotesTitle">注意事項</h3>
-      <ul><li data-i18n="helpNoteFormat">読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。</li><li data-i18n="helpNoteOutput">処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。</li><li data-i18n="helpNoteLimits">他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。</li><li data-i18n="helpNoteMic">マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。</li></ul>
+      <ul><li data-i18n="helpNoteFormat">読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。</li><li data-i18n="helpNoteOutput">処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。処理後の声が小さくなった場合は、音量を少し補正することがあります。</li><li data-i18n="helpNoteLimits">他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。</li><li data-i18n="helpNoteMic">マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。</li></ul>
       <h3 data-i18n="helpModelTitle">使用モデル</h3><p data-i18n="helpModelBody">GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。</p>
       <p class="dialog-note" data-i18n="helpOffline">配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。</p>
       <!-- APP:HELP:END -->
@@ -785,10 +799,17 @@
   </dialog>
 
 
-  <nav class="app-mobile-bottom-bar" id="appMobileBottomBar" aria-label="Mobile actions">
+  <nav class="app-mobile-bottom-bar" id="appMobileBottomBar" data-i18n-aria-label="mobileActions" aria-label="スマホの操作">
     <button class="app-mobile-bottom-item" id="mobileSourceButton" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m8 8 4-4 4 4"/><path d="M5 13v6h14v-6"/></svg><span data-i18n="mobileFile">音声</span></button>
-    <button class="app-mobile-bottom-item primary" id="mobileProcessButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h3l2-7 4 13 3-9 2 5h4"/></svg><span data-i18n="mobileClean">ノイズ軽減</span></button>
+    <button class="app-mobile-bottom-item primary" id="mobileProcessButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13h3l2-7 4 13 3-9 2 5h4"/></svg><span id="mobileProcessLabel">10秒試す</span></button>
     <button class="app-mobile-bottom-item" id="mobileSaveButton" type="button" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h12l2 2v14H5z"/><path d="M8 4v6h8V4M8 16h8"/></svg><span data-i18n="mobileSave">保存</span></button>
+    <div class="app-mobile-processing" id="mobileProcessing" hidden role="status" aria-live="polite">
+      <div class="app-mobile-progress-main">
+        <div class="app-mobile-progress-row"><span class="app-mobile-progress-title" id="mobileProgressTitle">ノイズ低減中</span><span class="app-mobile-progress-percent" id="mobileProgressPercent">0%</span></div>
+        <div class="app-mobile-progress-track" aria-hidden="true"><div class="app-mobile-progress-fill" id="mobileProgressFill"></div></div>
+      </div>
+      <button class="app-mobile-cancel" id="mobileCancelButton" type="button" data-i18n="cancelProcess">キャンセル</button>
+    </div>
   </nav>
 
   <script>
@@ -838,26 +859,28 @@
       const translations = {
         ja: {
           brandMeta:'背景ノイズを軽減 · Before / After比較', helpTitle:'使い方と注意事項', close:'閉じる',
-          introTitle:'録音の背景ノイズを軽減', lead:'音声や動画の声を聞き取りやすくします。処理はブラウザー内だけで完結します。', localBadge:'完全ローカル処理',
+          introTitle:'音声のノイズを減らす', lead:'音声・動画の背景ノイズを減らして、WAVで保存します。', localBadge:'完全ローカル処理',
           sourceTitle:'音声を選ぶ', sourceDesc:'音声または動画を読み込みます。対応形式はブラウザーによって異なります。', dropTitle:'音声・動画をここにドロップ', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 など。ファイルは外部へ送信されません。', chooseFile:'ファイルを選択',fileFallback:'ファイルから選択', record:'録音する', stopRecording:'録音を停止', replace:'変更', originalWave:'元の音声', previewPositionHint:'波形をクリック・タップ・ドラッグして再生位置を変更できます。10秒プレビューはその位置から開始します。', sourceSeekLabel:'元音声の再生位置', beforeSeekLabel:'比較する元音声の再生位置', afterSeekLabel:'処理後の再生位置',
           processTitle:'ノイズを軽減', processDesc:'設定は不要です。まず10秒だけ試して、良ければ全体を処理できます。', tryTen:'現在位置から10秒試す', tryTenCaption:'短い範囲でBefore / Afterを確認', cleanAll:'ファイル全体をきれいにする', cleanAllCaption:'GTCRNで音声全体の背景ノイズを軽減', monoNote:'処理時に16 kHz・モノラルへ変換します。声を中心とした録音向けです。', cancelProcess:'キャンセル', loadingRuntime:'処理エンジンを準備しています', processingPreview:'10秒プレビューを処理しています', processingAll:'ファイル全体を処理しています',
           resultTitle:'処理結果', before:'元の音声', after:'処理後', previewResult:'10秒プレビュー', fullResult:'ファイル全体', outputFilename:'出力ファイル名', outputFilenameHint:'拡張子は自動で .wav が付きます', saveWav:'WAVで保存', outputNote:'保存される音声は16 kHz・モノラルのPCM WAVです。',
-          aboutTitle:'このツールでできること', aboutLead:'録音の声を聞き取りやすくするための軽量なノイズ低減です。', noiseCardTitle:'背景ノイズを軽減', noiseCardBody:'エアコン、ファン、サー音など、声に重なる背景ノイズの低減に向いています。', privacyCardTitle:'完全ローカル処理', privacyCardBody:'ファイル、録音、処理結果はサーバーへ送信されません。モデルも配布HTMLに内包されます。', limitCardTitle:'万能な音声修復ではありません', limitCardBody:'他人の声、音楽、強い反響、突然の大音量は十分に除去できない場合があります。',
           buildInfo:'技術情報', modelLabel:'モデル', appVersion:'アプリバージョン', dependencies:'内包依存数', footer:'音声のクリーニングはブラウザー内で完結',
-          helpBasicsTitle:'基本操作', helpStep1:'音声または動画を選びます。必要ならブラウザーで直接録音できます。', helpStep2:'波形上のシークバーを動かして位置を選び、「現在位置から10秒試す」で確認します。良ければ全体を処理します。', helpStep3:'処理後は同じ再生位置のまま元音声と処理後を切り替えて確認し、WAVで保存します。', helpPrivacyTitle:'プライバシー', helpPrivacyBody:'音声ファイル、録音内容、処理結果はブラウザー内だけで扱われ、このアプリから外部へ送信されません。実行時通信もCSPで遮断しています。', helpNotesTitle:'注意事項', helpNoteFormat:'読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。', helpNoteOutput:'処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。', helpNoteLimits:'他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。', helpNoteMic:'マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。', helpModelTitle:'使用モデル', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。', helpOffline:'配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。',
-          mobileFile:'音声', mobileClean:'ノイズ軽減', mobileSave:'保存', saved:'WAVを保存しました', cancelled:'処理をキャンセルしました', decoded:'音声を読み込みました', recordingStarted:'録音を開始しました', recordingStopped:'録音を停止しました',
+          helpBasicsTitle:'基本操作', helpStep1:'音声または動画を選びます。必要ならブラウザーで直接録音できます。', helpStep2:'波形上のシークバーを動かして位置を選び、「現在位置から10秒試す」で確認します。良ければ全体を処理します。', helpStep3:'処理後は同じ再生位置のまま元音声と処理後を切り替えて確認し、WAVで保存します。', helpPrivacyTitle:'プライバシー', helpPrivacyBody:'音声ファイル、録音内容、処理結果はブラウザー内だけで扱われ、このアプリから外部へ送信されません。実行時通信もCSPで遮断しています。', helpNotesTitle:'注意事項', helpNoteFormat:'読み込める形式はブラウザーの音声デコーダーに依存します。対応していない形式は読み込めません。', helpNoteOutput:'処理時に16 kHz・モノラルへ変換します。音楽の高音質変換ではなく、会話・録音の聞き取りやすさを目的としています。処理後の声が小さくなった場合は、音量を少し補正することがあります。', helpNoteLimits:'他人の声、音楽、強い残響、突発音などは十分に除去できない場合があります。重要な音声は保存後に聞き比べてください。', helpNoteMic:'マイク録音はブラウザーの権限とセキュリティ制限を受けます。file:// で許可されない場合はHTTPSまたはlocalhostで開いてください。', helpModelTitle:'使用モデル', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) をWebAssemblyで実行します。モデルは端末内で動きます。', helpOffline:'配布用HTMLには必要なコードとWASMを内包し、処理中のネットワーク接続を必要としません。',
+          mobileActions:'スマホの操作', compareLabel:'処理前後の比較', monoLabel:'モノラル', mobileFile:'音声', mobileClean:'ノイズ軽減', mobileTryTen:'10秒試す', mobileCleanAll:'全体を処理', mobileSave:'保存', saved:'WAVのダウンロードを開始しました', cancelled:'処理をキャンセルしました', decoded:'音声を読み込みました', recordingStarted:'録音を開始しました', recordingStopped:'録音を停止しました',
+          loadingSource:'音声を読み込んでいます…', replaceConfirmTitle:'音声を置き換えますか？', replaceConfirmMessage:'現在の音声と処理結果は、このタブから消えます。元のファイルやダウンロード済みのWAVは削除されません。', replaceCancel:'キャンセル', replaceConfirmAction:'置き換える', recordingEmpty:'録音データがありません。もう一度録音してください。',
+          previewNotSaveable:'10秒プレビューは保存できません。全体を処理するとWAVを保存できます。', savePreviousFull:'保存対象: 前回のファイル全体の処理結果（表示中の10秒プレビューではありません）', saveCurrentFull:'保存対象: ファイル全体の処理結果',
           fileTooLarge:'ファイルが大きすぎます。250 MB以下のファイルを選んでください。', durationTooLong:'60分を超える音声には対応していません。', decodeFailed:'このファイルを音声として読み込めませんでした。別の形式を試してください。', runtimeFailed:'ノイズ低減エンジンを開始できませんでした。WebAssembly SIMD対応ブラウザーでお試しください。', processFailed:'ノイズ低減処理に失敗しました。', micUnavailable:'このブラウザーではマイク録音を利用できません。', micDenied:'マイクを開始できませんでした。権限やHTTPS/localhostでの利用を確認してください。'
         },
         en: {
           brandMeta:'Reduce background noise · Before / After comparison', helpTitle:'How to use & notes', close:'Close',
-          introTitle:'Reduce background noise in recordings', lead:'Make speech in audio and video easier to hear. Processing stays entirely in your browser.', localBadge:'Fully local processing',
+          introTitle:'Reduce noise in audio recordings', lead:'Reduce background noise in audio or video, then save as WAV.', localBadge:'Fully local processing',
           sourceTitle:'Choose audio', sourceDesc:'Load an audio or video file. Supported formats depend on your browser.', dropTitle:'Drop audio or video here', dropBody:'WAV / MP3 / M4A / AAC / OGG / WebM / MP4 and more. Files are never uploaded.', chooseFile:'Choose file',fileFallback:'Choose from files', record:'Record', stopRecording:'Stop recording', replace:'Change', originalWave:'Original audio', previewPositionHint:'Click, tap, or drag the waveform to seek. The 10-second preview starts there.', sourceSeekLabel:'Original audio seek position', beforeSeekLabel:'Comparison original audio seek position', afterSeekLabel:'Cleaned audio seek position',
           processTitle:'Reduce noise', processDesc:'No tuning required. Try 10 seconds first, then process the whole file if it sounds good.', tryTen:'Try 10 seconds from here', tryTenCaption:'Compare a short Before / After sample', cleanAll:'Clean the whole file', cleanAllCaption:'Reduce background noise across the file with GTCRN', monoNote:'Processing converts audio to 16 kHz mono. It is designed mainly for spoken recordings.', cancelProcess:'Cancel', loadingRuntime:'Preparing the processing engine', processingPreview:'Processing 10-second preview', processingAll:'Processing the whole file',
           resultTitle:'Result', before:'Original', after:'Cleaned', previewResult:'10-second preview', fullResult:'Whole file', outputFilename:'Output filename', outputFilenameHint:'The .wav extension is added automatically', saveWav:'Save WAV', outputNote:'Saved audio is 16 kHz mono PCM WAV.',
-          aboutTitle:'What this tool does', aboutLead:'Lightweight noise reduction focused on making recorded speech easier to hear.', noiseCardTitle:'Reduce background noise', noiseCardBody:'Works best on background noise such as fans, air conditioning, and steady hiss behind speech.', privacyCardTitle:'Fully local', privacyCardBody:'Files, recordings, and results are not sent to a server. The model is embedded in the distributable HTML.', limitCardTitle:'Not universal audio restoration', limitCardBody:'Other voices, music, strong reverb, and sudden loud sounds may not be removed well.',
           buildInfo:'Technical information', modelLabel:'Model', appVersion:'App version', dependencies:'Embedded dependencies', footer:'Voice cleaning stays in the browser',
-          helpBasicsTitle:'Basics', helpStep1:'Choose an audio or video file, or record directly in the browser when microphone access is available.', helpStep2:'Move the seek bar on the waveform, try 10 seconds there, and process the whole file if you like the result.', helpStep3:'Switch between original and cleaned audio at the same playback position, then save the result as WAV.', helpPrivacyTitle:'Privacy', helpPrivacyBody:'Audio files, recordings, and results stay in the browser and are not sent outside this app. CSP also blocks runtime network access.', helpNotesTitle:'Notes', helpNoteFormat:'Readable formats depend on your browser audio decoder. Unsupported codecs or containers cannot be loaded.', helpNoteOutput:'Audio is converted to 16 kHz mono for processing. This tool targets intelligible speech rather than high-fidelity music conversion.', helpNoteLimits:'Other voices, music, strong reverberation, and transient noise may remain. Listen to important output after saving.', helpNoteMic:'Microphone recording depends on browser permissions and secure-context rules. If file:// is blocked, use HTTPS or localhost.', helpModelTitle:'Model', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) runs locally through WebAssembly.', helpOffline:'The distributable HTML embeds the required code and WASM and does not need a network connection while processing.',
-          mobileFile:'Audio', mobileClean:'Clean', mobileSave:'Save', saved:'WAV saved', cancelled:'Processing cancelled', decoded:'Audio loaded', recordingStarted:'Recording started', recordingStopped:'Recording stopped',
+          helpBasicsTitle:'Basics', helpStep1:'Choose an audio or video file, or record directly in the browser when microphone access is available.', helpStep2:'Move the seek bar on the waveform, try 10 seconds there, and process the whole file if you like the result.', helpStep3:'Switch between original and cleaned audio at the same playback position, then save the result as WAV.', helpPrivacyTitle:'Privacy', helpPrivacyBody:'Audio files, recordings, and results stay in the browser and are not sent outside this app. CSP also blocks runtime network access.', helpNotesTitle:'Notes', helpNoteFormat:'Readable formats depend on your browser audio decoder. Unsupported codecs or containers cannot be loaded.', helpNoteOutput:'Audio is converted to 16 kHz mono for processing. This tool targets intelligible speech rather than high-fidelity music conversion. The voice level may be adjusted slightly after noise reduction.', helpNoteLimits:'Other voices, music, strong reverberation, and transient noise may remain. Listen to important output after saving.', helpNoteMic:'Microphone recording depends on browser permissions and secure-context rules. If file:// is blocked, use HTTPS or localhost.', helpModelTitle:'Model', helpModelBody:'GTCRN (Grouped Temporal Convolutional Recurrent Network) runs locally through WebAssembly.', helpOffline:'The distributable HTML embeds the required code and WASM and does not need a network connection while processing.',
+          mobileActions:'Mobile actions', compareLabel:'Before and After comparison', monoLabel:'Mono', mobileFile:'Audio', mobileClean:'Clean', mobileTryTen:'Try 10 sec', mobileCleanAll:'Clean all', mobileSave:'Save', saved:'WAV download started', cancelled:'Processing cancelled', decoded:'Audio loaded', recordingStarted:'Recording started', recordingStopped:'Recording stopped',
+          loadingSource:'Loading audio…', replaceConfirmTitle:'Replace audio?', replaceConfirmMessage:'Your current audio and processed results will be removed from this tab. Original files and previously downloaded WAVs are not deleted.', replaceCancel:'Cancel', replaceConfirmAction:'Replace audio', recordingEmpty:'No audio was recorded. Please try recording again.',
+          previewNotSaveable:'A 10-second preview cannot be saved. Process the whole file to save WAV.', savePreviousFull:'Saving: previous whole-file result (not the 10-second preview being shown)', saveCurrentFull:'Saving: whole-file result',
           fileTooLarge:'The file is too large. Choose a file under 250 MB.', durationTooLong:'Audio longer than 60 minutes is not supported.', decodeFailed:'This file could not be decoded as audio. Try another format.', runtimeFailed:'Could not start the noise-reduction engine. Try a browser with WebAssembly SIMD support.', processFailed:'Noise reduction failed.', micUnavailable:'Microphone recording is not available in this browser.', micDenied:'Could not start the microphone. Check permission and HTTPS/localhost requirements.'
         }
       };
@@ -872,8 +895,12 @@
         document.querySelectorAll('[data-i18n-title]').forEach(el=>el.title=t(el.dataset.i18nTitle));
         document.querySelectorAll('[data-i18n-aria-label]').forEach(el=>el.setAttribute('aria-label',t(el.dataset.i18nAriaLabel)));
         $('#languageButton').textContent=language==='ja'?'EN':'JA';
-        $('#recordButtonLabel').textContent=recording ? t('stopRecording') : t('record');
+        const currentRecordLabel=recording ? `${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}` : t('record');
+        $('#recordButtonLabel').textContent=currentRecordLabel;
+        $('#recordAgainButtonLabel').textContent=currentRecordLabel;
         updateResultLabels();
+        updateSourceMeta();
+        updateMobileControls();
       }
 
       const toast=$('#appToast'), toastMessage=$('#appToastMessage'), toastAction=$('#appToastAction');
@@ -882,8 +909,8 @@
       window.AppToast=Object.freeze({ show({message,actionLabel='',onAction=null,duration=3200,tone='default'}={}) { clearTimeout(toastTimer); toastMessage.textContent=message||''; toast.dataset.tone=tone; toastHandler=typeof onAction==='function'?onAction:null; toastAction.hidden=!toastHandler; toastAction.textContent=actionLabel||''; toast.classList.add('show'); if(duration>0) toastTimer=setTimeout(dismissToast,duration); return {dismiss:dismissToast}; }, dismiss:dismissToast });
       toastAction.addEventListener('click',()=>{ const h=toastHandler; dismissToast(); h?.(); });
 
-      const state={ generation:0, phase:'empty', source:null, sourcePcm:null, duration:0, sourceRate:0, sourceChannels:0, result:null, resultKind:null, resultStart:0, worker:null, runtimeUrl:null, wasmBytes:null, objectUrls:new Set(), resultUrls:new Set() };
-      let recording=false, recorder=null, recorderStream=null, recorderChunks=[], recordTimer=0, recordStartedAt=0;
+      const state={ generation:0, runId:0, resultSwitchId:0, phase:'empty', source:null, sourcePcm:null, duration:0, sourceRate:0, sourceChannels:0, result:null, resultKind:null, resultStart:0, fullResult:null, worker:null, runtimeUrl:null, wasmBytes:null, objectUrls:new Set(), resultUrls:new Set() };
+      let recording=false, requestingMic=false, recorder=null, recorderStream=null, recorderChunks=[], recordTimer=0, recordStartedAt=0;
       const MAX_BYTES=250*1024*1024, MAX_DURATION=3600, SAMPLE_RATE=16000;
 
       function revokeObjectUrls(){ for(const url of state.objectUrls) URL.revokeObjectURL(url); state.objectUrls.clear(); revokeResultUrls(); }
@@ -893,16 +920,55 @@
       function formatBytes(bytes){ if(bytes<1024*1024) return `${(bytes/1024).toFixed(0)} KB`; return `${(bytes/1024/1024).toFixed(bytes>10*1024*1024?0:1)} MB`; }
       function safeStem(name){ return (name||APP_CONFIG.slug).replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim().slice(0,110) || APP_CONFIG.slug; }
       function outputName(){ const raw=$('#outputFilename').value; return `${safeStem(raw)}.wav`; }
-      function setPhase(phase){ state.phase=phase; const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing'; const ready=Boolean(state.sourcePcm)&&!busy; $('#previewButton').disabled=!ready; $('#processButton').disabled=!ready; $('#mobileProcessButton').disabled=!ready; $('#chooseFileButton').disabled=busy; $('#replaceButton').disabled=busy; $('#fileInput').disabled=busy; $('#recordButton').disabled=busy||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined')); $('#cancelButton').disabled=!(phase==='loading-runtime'||phase==='processing'); $('#mobileSaveButton').disabled=!(state.result&&state.resultKind==='full')||busy; $('#saveButton').disabled=!(state.result&&state.resultKind==='full')||busy; }
+      function updateSourceMeta(){
+        if(!state.sourcePcm)return;
+        $('#sourceMeta').textContent=`${formatTime(state.duration)} · ${state.sourceChannels===1?t('monoLabel'):`${state.sourceChannels} ch`}`;
+      }
+      function updateMobileControls(){ $('#mobileProcessLabel').textContent=t(state.result ? 'mobileCleanAll' : 'mobileTryTen'); }
+      function setPhase(phase){
+        state.phase=phase;
+        document.body.classList.toggle('has-loaded-source',Boolean(state.sourcePcm));
+        const busy=phase==='loading-source'||phase==='loading-runtime'||phase==='processing';
+        const denoising=phase==='loading-runtime'||phase==='processing';
+        const locked=busy||recording||requestingMic, ready=Boolean(state.sourcePcm)&&!locked;
+        $('#previewButton').disabled=!ready;
+        $('#processButton').disabled=!ready;
+        $('#mobileProcessButton').disabled=!ready;
+        $('#chooseFileButton').disabled=locked;
+        $('#replaceButton').disabled=locked;
+        $('#fileInput').disabled=locked;
+        $('#fileFallbackButton').disabled=locked;
+        $('#fileFallbackInput').disabled=locked;
+        const recordDisabled=busy||requestingMic||(!recording && (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder==='undefined'));
+        $('#recordButton').disabled=recordDisabled;
+        $('#recordAgainButton').disabled=recordDisabled;
+        $('#cancelButton').disabled=!denoising;
+        $('#mobileCancelButton').disabled=!denoising;
+        $('#mobileProcessing').hidden=!denoising;
+        $('#appMobileBottomBar').classList.toggle('is-processing',denoising);
+        $('#mobileSaveButton').disabled=!state.fullResult||locked;
+        $('#saveButton').disabled=!state.fullResult||locked;
+        updateMobileControls();
+      }
       function showError(which,message){ const el=$(which); el.textContent=message; el.classList.toggle('is-visible',Boolean(message)); }
       function clearErrors(){ showError('#sourceError',''); showError('#processError',''); }
-      function setProgress(show,title='',percent=0,status=''){ $('#progressCard').classList.toggle('is-visible',show); $('#progressTitle').textContent=title; $('#progressPercent').textContent=`${Math.round(percent)}%`; $('#progressFill').style.width=`${Math.max(0,Math.min(100,percent))}%`; $('#progressStatus').textContent=status; }
+      function setProgress(show,title='',percent=0,status=''){
+        const value=Math.max(0,Math.min(100,percent)),pct=`${Math.round(value)}%`;
+        $('#progressCard').classList.toggle('is-visible',show);
+        $('#progressTitle').textContent=title;
+        $('#progressPercent').textContent=pct;
+        $('#progressFill').style.width=`${value}%`;
+        $('#progressStatus').textContent=status;
+        $('#mobileProgressTitle').textContent=title;
+        $('#mobileProgressPercent').textContent=pct;
+        $('#mobileProgressFill').style.width=`${value}%`;
+      }
 
       function drawWave(canvas,data){
         const ctx=canvas.getContext('2d'); const dpr=Math.min(window.devicePixelRatio||1,2); const rect=canvas.getBoundingClientRect(); const w=Math.max(320,Math.floor(rect.width*dpr)), h=Math.floor((parseFloat(getComputedStyle(canvas).height)||82)*dpr); if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
         ctx.clearRect(0,0,w,h); ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--line').trim()||'#dadbd6'; ctx.lineWidth=1*dpr; ctx.beginPath(); ctx.moveTo(0,h/2);ctx.lineTo(w,h/2);ctx.stroke(); if(!data?.length)return;
-        const step=Math.max(1,Math.floor(data.length/w)); ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#16624f';ctx.lineWidth=1*dpr;ctx.beginPath();
-        for(let x=0;x<w;x++){ let min=1,max=-1; const start=x*step,end=Math.min(data.length,start+step); for(let i=start;i<end;i++){const v=data[i];if(v<min)min=v;if(v>max)max=v;} if(end<=start){min=max=0;} const y1=(1-max)*h/2,y2=(1-min)*h/2;ctx.moveTo(x,y1);ctx.lineTo(x,y2);} ctx.stroke();
+        ctx.strokeStyle=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#16624f';ctx.lineWidth=1*dpr;ctx.beginPath();
+        for(let x=0;x<w;x++){ let min=1,max=-1; const start=Math.floor(x*data.length/w),end=Math.min(data.length,Math.max(start+1,Math.ceil((x+1)*data.length/w))); for(let i=start;i<end;i++){const v=data[i];if(v<min)min=v;if(v>max)max=v;} if(end<=start){min=max=0;} const y1=(1-max)*h/2,y2=(1-min)*h/2;ctx.moveTo(x,y1);ctx.lineTo(x,y2);} ctx.stroke();
       }
       function redrawAll(){ if(state.sourcePcm) drawWave($('#sourceWaveCanvas'),state.sourcePcm); if(state.result){ const original=getResultOriginal(); drawWave($('#beforeWaveCanvas'),original); drawWave($('#afterWaveCanvas'),state.result); } }
       window.addEventListener('resize',()=>requestAnimationFrame(redrawAll));
@@ -983,20 +1049,101 @@
         if(generation!==state.generation) return null; return {pcm:new Float32Array(rendered.getChannelData(0)),duration,srcRate,channels};
       }
 
-      async function loadSource(file){
-        if(!file)return; stopProcessing(false); clearErrors(); state.generation+=1; const gen=state.generation; revokeObjectUrls(); state.source=file; state.sourcePcm=null; state.result=null;state.resultKind=null; $('#resultSection').hidden=true;
-        $('#sourceAudio').pause(); $('#sourceAudio').removeAttribute('src'); $('#sourceAudio').load();
-        $('#resultAudio').pause(); $('#resultAudio').removeAttribute('src'); $('#resultAudio').load();
-        resetWaveSeeks(); drawWave($('#sourceWaveCanvas'),null);
-        $('#dropZone').hidden=true; $('#sourceCard').hidden=false; $('#sourceName').textContent=file.name||'recording'; $('#sourceMeta').textContent=`${formatBytes(file.size)} · …`; setPhase('loading-source');
-        try { const d=await decodeTo16k(file,gen); if(!d||gen!==state.generation)return; state.sourcePcm=d.pcm;state.duration=d.duration;state.sourceRate=d.srcRate;state.sourceChannels=d.channels; $('#sourceMeta').textContent=`${formatTime(d.duration)} · ${Math.round(d.srcRate/100)/10} kHz · ${d.channels===1?'Mono':`${d.channels} ch`}`; syncSeekGroup(seekGroups[0],0); const srcUrl=makeUrl(pcmToWav(d.pcm)); $('#sourceAudio').src=srcUrl; $('#outputFilename').value=`${safeStem(file.name)}-cleaned`; requestAnimationFrame(()=>drawWave($('#sourceWaveCanvas'),d.pcm)); setPhase('ready'); window.AppToast.show({message:t('decoded'),tone:'success'}); }
-        catch(e){ if(gen!==state.generation)return; state.sourcePcm=null; $('#dropZone').hidden=false;$('#sourceCard').hidden=true;showError('#sourceError',e?.message||t('decodeFailed'));setPhase('error'); }
+      function confirmAudioReplacement(){
+        const dialog=$('#appConfirmDialog'),cancel=$('#appConfirmCancel'),ok=$('#appConfirmOk'),close=$('#appConfirmClose');
+        $('#appConfirmTitle').textContent=t('replaceConfirmTitle');
+        $('#appConfirmMessage').textContent=t('replaceConfirmMessage');
+        cancel.textContent=t('replaceCancel');
+        ok.textContent=t('replaceConfirmAction');
+        return new Promise(resolve=>{
+          let settled=false;
+          const cleanup=()=>{
+            cancel.removeEventListener('click',onCancel);
+            close.removeEventListener('click',onCancel);
+            ok.removeEventListener('click',onAccept);
+            dialog.removeEventListener('close',onClose);
+            dialog.removeEventListener('click',onBackdrop);
+          };
+          const finish=accepted=>{
+            if(settled)return;
+            settled=true;cleanup();
+            if(dialog.open)dialog.close();
+            resolve(accepted);
+          };
+          const onCancel=()=>finish(false),onAccept=()=>finish(true),onClose=()=>finish(false);
+          const onBackdrop=event=>{
+            if(event.target!==dialog)return;
+            const rect=dialog.getBoundingClientRect();
+            if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)finish(false);
+          };
+          cancel.addEventListener('click',onCancel);close.addEventListener('click',onCancel);ok.addEventListener('click',onAccept);
+          dialog.addEventListener('close',onClose);dialog.addEventListener('click',onBackdrop);
+          dialog.showModal();cancel.focus();
+        });
       }
 
+      async function loadSource(file){
+        if(!file||recording||requestingMic||['loading-source','loading-runtime','processing'].includes(state.phase))return;
+        const previous=Boolean(state.sourcePcm),gen=++state.generation;
+        clearErrors();
+        setPhase('loading-source');
+        $('#sourceLoading').hidden=false;
+        try{
+          // Decode first. Failed or canceled replacements must not discard the current work.
+          const decoded=await decodeTo16k(file,gen);
+          if(!decoded||gen!==state.generation)return;
+          if(previous){
+            $('#sourceLoading').hidden=true;
+            setPhase('ready');
+            if(!await confirmAudioReplacement()||gen!==state.generation){
+              requestAnimationFrame(()=>{if(!$('#replaceButton').disabled)$('#replaceButton').focus();});
+              return;
+            }
+            setPhase('loading-source');
+          }
+          // Keep the prior source intact if WAV preparation fails.
+          $('#sourceLoading').hidden=false;
+          const preparedUrl=URL.createObjectURL(pcmToWav(decoded.pcm));
+          stopProcessing(false);
+          $('#sourceAudio').pause();$('#sourceAudio').removeAttribute('src');$('#sourceAudio').load();
+          $('#resultAudio').pause();$('#resultAudio').removeAttribute('src');$('#resultAudio').load();
+          revokeObjectUrls();state.objectUrls.add(preparedUrl);
+          state.source=file;state.sourcePcm=decoded.pcm;state.duration=decoded.duration;
+          state.sourceRate=decoded.srcRate;state.sourceChannels=decoded.channels;
+          state.result=null;state.resultKind=null;state.resultStart=0;state.fullResult=null;
+          state.resultSwitchId++;
+          $('#resultSection').hidden=true;
+          $('#dropZone').hidden=true;$('#sourceCard').hidden=false;
+          $('#sourceName').textContent=file.name||'recording';
+          updateSourceMeta();
+          resetWaveSeeks();syncSeekGroup(seekGroups[0],0);
+          $('#sourceAudio').src=preparedUrl;
+          $('#outputFilename').value=`${safeStem(file.name)}-cleaned`;
+          requestAnimationFrame(()=>{drawWave($('#sourceWaveCanvas'),decoded.pcm);if(previous&&!$('#replaceButton').disabled)$('#replaceButton').focus();});
+          setPhase('ready');window.AppToast.show({message:t('decoded'),tone:'success'});
+        }catch(error){
+          if(gen!==state.generation)return;
+          showError('#sourceError',error?.message||t('decodeFailed'));
+          setPhase(previous?'ready':'error');
+        }finally{
+          if(gen===state.generation){$('#sourceLoading').hidden=true;if(state.phase==='loading-source')setPhase(previous?'ready':'error');}
+        }
+      }
+
+      let runtimePromise=null;
       async function ensureRuntime(){
         if(state.runtimeUrl&&state.wasmBytes)return;
-        if(!StandaloneAssets.has('gtcrn-wasm','main')||!StandaloneAssets.has('gtcrn-wasm','wasm')) throw new Error(t('runtimeFailed'));
-        state.runtimeUrl=await StandaloneAssets.blobUrlAsync('gtcrn-wasm','main'); state.wasmBytes=await StandaloneAssets.bytesAsync('gtcrn-wasm','wasm');
+        if(!runtimePromise){
+          runtimePromise=(async()=>{
+            if(!StandaloneAssets.has('gtcrn-wasm','main')||!StandaloneAssets.has('gtcrn-wasm','wasm'))throw new Error(t('runtimeFailed'));
+            const url=await StandaloneAssets.blobUrlAsync('gtcrn-wasm','main');
+            try{
+              const bytes=await StandaloneAssets.bytesAsync('gtcrn-wasm','wasm');
+              state.runtimeUrl=url;state.wasmBytes=bytes;
+            }catch(error){URL.revokeObjectURL(url);blobUrls.delete(url);throw error;}
+          })().finally(()=>{runtimePromise=null;});
+        }
+        await runtimePromise;
       }
 
       function workerSource(){ return `
@@ -1021,46 +1168,235 @@
         };` }
 
       async function runDenoise(kind){
-        if(!state.sourcePcm||state.phase==='processing'||state.phase==='loading-runtime')return; clearErrors(); const gen=state.generation; let start=0,input;
-        if(kind==='preview'){ const desired=$('#sourceAudio').currentTime||0; start=Math.max(0,Math.min(state.duration,desired)); const a=Math.floor(start*SAMPLE_RATE), b=Math.min(state.sourcePcm.length,a+10*SAMPLE_RATE); input=state.sourcePcm.slice(a,b); start=a/SAMPLE_RATE; }
-        else input=state.sourcePcm.slice();
-        if(!input.length)return;
+        if(!state.sourcePcm||recording||['loading-source','loading-runtime','processing'].includes(state.phase))return;
+        clearErrors();
+        const gen=state.generation, runId=++state.runId;
+        const isCurrent=()=>gen===state.generation&&runId===state.runId;
+        let start=0,input,worker=null;
+        if(kind==='preview'){
+          const desired=$('#sourceAudio').currentTime||0;
+          start=Math.max(0,Math.min(state.duration,desired));
+          let a=Math.min(state.sourcePcm.length,Math.floor(start*SAMPLE_RATE));
+          // When playback has ended, preview the final up-to-10 seconds instead of doing nothing.
+          if(a>=state.sourcePcm.length)a=Math.max(0,state.sourcePcm.length-10*SAMPLE_RATE);
+          const b=Math.min(state.sourcePcm.length,a+10*SAMPLE_RATE);
+          input=state.sourcePcm.slice(a,b);start=a/SAMPLE_RATE;
+        }else input=state.sourcePcm.slice();
+        const totalSamples=input.length; // Transferring the buffer detaches input.
+        if(!totalSamples)return;
         try{
-          setPhase('loading-runtime'); setProgress(true,t('loadingRuntime'),2,'GTCRN · WebAssembly'); await ensureRuntime(); if(gen!==state.generation)return;
-          setPhase('processing'); setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),4,`${formatTime(input.length/SAMPLE_RATE)}`);
-          const workerUrl=URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'})); const worker=new Worker(workerUrl,{type:'module'}); URL.revokeObjectURL(workerUrl); state.worker=worker;
-          worker.onmessage=(event)=>{ if(gen!==state.generation)return; const d=event.data; if(d.type==='progress'){setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),5+d.value*94,`${formatTime(Math.min(input.length,d.value*input.length)/SAMPLE_RATE)} / ${formatTime(input.length/SAMPLE_RATE)}`);} else if(d.type==='done'){ const out=new Float32Array(d.buffer); worker.terminate(); if(state.worker===worker)state.worker=null; setProgress(false); commitResult(kind,start,out); setPhase('result'); } else if(d.type==='error'){console.error('[Voice Cleaner] GTCRN inference failed:', d.message || 'unknown error');worker.terminate();if(state.worker===worker)state.worker=null;setProgress(false);showError('#processError',t('processFailed'));setPhase('ready');} };
-          worker.onerror=(event)=>{console.error('[Voice Cleaner] Worker startup failed:', event.message || event.type);worker.terminate();if(state.worker===worker)state.worker=null;setProgress(false);showError('#processError',t('runtimeFailed'));setPhase('ready');};
-          const wasmCopy=state.wasmBytes.slice(); worker.postMessage({type:'process',moduleUrl:state.runtimeUrl,wasmBuffer:wasmCopy.buffer,pcmBuffer:input.buffer},[wasmCopy.buffer,input.buffer]);
-        } catch(e){ console.error('[Voice Cleaner] Audio processing setup failed:', e); if(gen!==state.generation)return; setProgress(false);showError('#processError',e?.message||t('runtimeFailed'));setPhase('ready'); }
+          setPhase('loading-runtime');
+          setProgress(true,t('loadingRuntime'),2,'GTCRN · WebAssembly');
+          await ensureRuntime();
+          if(!isCurrent())return;
+          setPhase('processing');
+          setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),4,formatTime(totalSamples/SAMPLE_RATE));
+          const workerUrl=URL.createObjectURL(new Blob([workerSource()],{type:'text/javascript'}));
+          try { worker=new Worker(workerUrl,{type:'module'}); }
+          finally { URL.revokeObjectURL(workerUrl); }
+          state.worker=worker;
+          worker.onmessage=(event)=>{
+            if(!isCurrent()||state.worker!==worker)return;
+            const d=event.data;
+            if(d.type==='progress'){
+              setProgress(true,kind==='preview'?t('processingPreview'):t('processingAll'),5+d.value*94,`${formatTime(Math.min(totalSamples,d.value*totalSamples)/SAMPLE_RATE)} / ${formatTime(totalSamples/SAMPLE_RATE)}`);
+            }else if(d.type==='done'){
+              worker.terminate();state.worker=null;setProgress(false);
+              try{commitResult(kind,start,new Float32Array(d.buffer));setPhase('result');}
+              catch(error){console.error('[Voice Cleaner] Could not prepare the audio result:',error);showError('#processError',t('processFailed'));setPhase('ready');}
+            }else if(d.type==='error'){
+              console.error('[Voice Cleaner] GTCRN inference failed:',d.message||'unknown error');
+              worker.terminate();state.worker=null;setProgress(false);
+              showError('#processError',t('processFailed'));setPhase('ready');
+            }
+          };
+          worker.onerror=(event)=>{
+            if(!isCurrent()||state.worker!==worker)return;
+            console.error('[Voice Cleaner] Worker startup failed:',event.message||event.type);
+            worker.terminate();state.worker=null;setProgress(false);
+            showError('#processError',t('runtimeFailed'));setPhase('ready');
+          };
+          const wasmCopy=state.wasmBytes.slice();
+          worker.postMessage({type:'process',moduleUrl:state.runtimeUrl,wasmBuffer:wasmCopy.buffer,pcmBuffer:input.buffer},[wasmCopy.buffer,input.buffer]);
+        }catch(error){
+          if(worker){worker.terminate();if(state.worker===worker)state.worker=null;}
+          if(!isCurrent())return;
+          console.error('[Voice Cleaner] Audio processing setup failed:',error);
+          setProgress(false);showError('#processError',t('runtimeFailed'));setPhase('ready');
+        }
+      }
+
+
+      // Restore a small amount of speech loudness lost during suppression.
+      // The test is deliberately conservative: it needs changing speech-like levels,
+      // ignores nearly silent clips, and never raises an already loud/peaking signal.
+      function restoreSpeechLevel(original,cleaned){
+        const length=Math.min(original.length,cleaned.length);
+        const frameSize=640; // 40 ms at 16 kHz, for an inexpensive loudness estimate.
+        if(length<frameSize*3)return 1;
+        const frames=[], cleanedLevels=[];
+        let peak=0;
+        for(let start=0;start<length;start+=frameSize){
+          const end=Math.min(start+frameSize,length),count=end-start;
+          let originalPower=0,cleanedPower=0;
+          for(let i=start;i<end;i++){
+            const input=original[i],output=cleaned[i];
+            originalPower+=input*input;cleanedPower+=output*output;
+            peak=Math.max(peak,Math.abs(output));
+          }
+          const level=Math.sqrt(cleanedPower/count);
+          frames.push({original:Math.sqrt(originalPower/count),cleaned:level});
+          cleanedLevels.push(level);
+        }
+        const sorted=cleanedLevels.sort((a,b)=>a-b);
+        const low=sorted[Math.floor((sorted.length-1)*.20)];
+        const high=sorted[Math.floor((sorted.length-1)*.80)];
+        // Continuous hum/noise, near-silence, or a clip without dynamic speech-like
+        // sections should not become louder just because suppression removed noise.
+        if(high<.010||high<low*1.8||peak>=.98)return 1;
+        const ratios=[];
+        for(const frame of frames){
+          if(frame.cleaned>=Math.max(.006,high*.68)&&frame.original>=.008){
+            ratios.push(frame.original/frame.cleaned);
+          }
+        }
+        if(ratios.length<3)return 1;
+        ratios.sort((a,b)=>a-b);
+        const voicedRatio=ratios[Math.floor(ratios.length/2)];
+        // Up to +2.6 dB. Never attenuate and never clip the 16-bit WAV.
+        const gain=Math.min(1.35,voicedRatio,.98/peak);
+        if(!Number.isFinite(gain)||gain<1.11)return 1;
+        for(let i=0;i<cleaned.length;i++)cleaned[i]*=gain;
+        return gain;
       }
 
       function getResultOriginal(){ if(!state.result)return null; if(state.resultKind==='full')return state.sourcePcm; const a=Math.round(state.resultStart*SAMPLE_RATE);return state.sourcePcm.slice(a,a+state.result.length); }
       function commitResult(kind,start,output){
-        revokeResultUrls(); state.result=output;state.resultKind=kind;state.resultStart=start; const original=getResultOriginal(); const originalUrl=makeUrl(pcmToWav(original),'result'), cleanUrl=makeUrl(pcmToWav(output),'result'); $('#resultAudio').dataset.originalUrl=originalUrl;$('#resultAudio').dataset.cleanedUrl=cleanUrl;$('#resultAudio').src=originalUrl;$('#originalToggle').classList.add('is-active');$('#cleanedToggle').classList.remove('is-active');$('#resultSection').hidden=false; updateResultLabels(); syncSeekGroup(seekGroups[1],0); requestAnimationFrame(()=>{drawWave($('#beforeWaveCanvas'),original);drawWave($('#afterWaveCanvas'),output);$('#resultSection').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});});
+        // Create new playback URLs before touching the last successful result.
+        const a=Math.round(start*SAMPLE_RATE);
+        const original=kind==='full'?state.sourcePcm:state.sourcePcm.slice(a,a+output.length);
+        restoreSpeechLevel(original,output);
+        const originalUrl=URL.createObjectURL(pcmToWav(original));
+        let cleanUrl;
+        try{cleanUrl=URL.createObjectURL(pcmToWav(output));}
+        catch(error){URL.revokeObjectURL(originalUrl);throw error;}
+        const audio=$('#resultAudio');state.resultSwitchId++;audio.pause();audio.removeAttribute('src');audio.load();
+        revokeResultUrls();
+        state.resultUrls.add(originalUrl);state.resultUrls.add(cleanUrl);
+        state.result=output;state.resultKind=kind;state.resultStart=start;
+        if(kind==='full')state.fullResult=output;
+        audio.dataset.originalUrl=originalUrl;audio.dataset.cleanedUrl=cleanUrl;
+        audio.src=originalUrl;
+        $('#originalToggle').classList.add('is-active');$('#cleanedToggle').classList.remove('is-active');
+        $('#resultSection').hidden=false;
+        updateResultLabels();updateMobileControls();syncSeekGroup(seekGroups[1],0);
+        requestAnimationFrame(()=>{
+          drawWave($('#beforeWaveCanvas'),original);drawWave($('#afterWaveCanvas'),output);
+          $('#resultSection').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+        });
       }
-      function updateResultLabels(){ if(!state.result)return; const dur=state.result.length/SAMPLE_RATE; $('#resultSubtitle').textContent=state.resultKind==='full'?t('fullResult'):t('previewResult'); $('#resultContext').textContent=state.resultKind==='full'?`${t('fullResult')} · ${formatTime(dur)} · 16 kHz · Mono`:`${t('previewResult')} · ${formatTime(state.resultStart)} – ${formatTime(state.resultStart+dur)}`; }
-      async function switchResult(which){ const audio=$('#resultAudio'); if(!state.result)return; const time=audio.currentTime||0, playing=!audio.paused; const url=audio.dataset[which==='cleaned'?'cleanedUrl':'originalUrl']; if(audio.src===url)return; $('#originalToggle').classList.toggle('is-active',which==='original');$('#cleanedToggle').classList.toggle('is-active',which==='cleaned'); audio.dataset.pendingWaveSeek=String(time); audio.src=url; syncSeekGroup(seekGroups[1],time); try{await new Promise(resolve=>audio.addEventListener('loadedmetadata',resolve,{once:true}));seekGroupTo(seekGroups[1],time);if(playing)await audio.play();}catch{} }
-      function saveResult(){ if(!state.result||state.resultKind!=='full')return; const blob=pcmToWav(state.result); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=outputName();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);window.AppToast.show({message:t('saved'),tone:'success'}); }
-      function stopProcessing(showToast=true){ if(state.worker){state.worker.terminate();state.worker=null;} if(state.phase==='processing'||state.phase==='loading-runtime'){setProgress(false);setPhase(state.sourcePcm?'ready':'empty');if(showToast)window.AppToast.show({message:t('cancelled')});} }
+      function updateResultLabels(){
+        if(!state.result)return;
+        const dur=state.result.length/SAMPLE_RATE;
+        $('#resultSubtitle').textContent=state.resultKind==='full'?t('fullResult'):t('previewResult');
+        $('#resultContext').textContent=state.resultKind==='full'
+          ? `${t('fullResult')} · ${formatTime(dur)} · 16 kHz · ${t('monoLabel')}`
+          : `${t('previewResult')} · ${formatTime(state.resultStart)} – ${formatTime(state.resultStart+dur)}`;
+        $('#saveScope').textContent=!state.fullResult?t('previewNotSaveable')
+          : state.resultKind==='preview'?t('savePreviousFull'):t('saveCurrentFull');
+      }
+      async function switchResult(which){
+        const audio=$('#resultAudio');if(!state.result)return;
+        const time=audio.currentTime||0,playing=!audio.paused;
+        const url=audio.dataset[which==='cleaned'?'cleanedUrl':'originalUrl'];
+        const switchId=++state.resultSwitchId;
+        if(audio.src===url)return;
+        $('#originalToggle').classList.toggle('is-active',which==='original');
+        $('#cleanedToggle').classList.toggle('is-active',which==='cleaned');
+        const ready=new Promise(resolve=>{
+          const done=()=>{audio.removeEventListener('loadedmetadata',done);audio.removeEventListener('error',done);resolve();};
+          audio.addEventListener('loadedmetadata',done);audio.addEventListener('error',done);
+        });
+        audio.dataset.pendingWaveSeek=String(time);audio.src=url;
+        syncSeekGroup(seekGroups[1],time);
+        try{
+          await ready;
+          if(switchId!==state.resultSwitchId)return;
+          seekGroupTo(seekGroups[1],time);
+          if(playing)await audio.play();
+        }catch{}
+      }
+      function saveResult(){ if(!state.fullResult)return; const blob=pcmToWav(state.fullResult); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=outputName();document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);window.AppToast.show({message:t('saved'),tone:'success'}); }
+      function stopProcessing(showToast=true){ const active=state.phase==='processing'||state.phase==='loading-runtime'||Boolean(state.worker);state.runId++;if(state.worker){state.worker.terminate();state.worker=null;}if(active){setProgress(false);setPhase(state.sourcePcm?'ready':'empty');if(showToast)window.AppToast.show({message:t('cancelled')});} }
 
       async function toggleRecording(){
-        if(recording){ recorder?.stop(); return; }
-        if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){showError('#sourceError',t('micUnavailable'));return;}
-        try{ recorderStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}}); const options={}; for(const m of ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/mp4']){if(MediaRecorder.isTypeSupported?.(m)){options.mimeType=m;break;}} recorderChunks=[];recorder=new MediaRecorder(recorderStream,options); recorder.ondataavailable=e=>{if(e.data?.size)recorderChunks.push(e.data);}; recorder.onstop=async()=>{recording=false;clearInterval(recordTimer);recorderStream?.getTracks().forEach(tr=>tr.stop());recorderStream=null;$('#recordButton').classList.remove('is-recording');$('#recordButtonLabel').textContent=t('record');const mime=recorder.mimeType||'audio/webm';const ext=mime.includes('mp4')?'m4a':mime.includes('ogg')?'ogg':'webm';const blob=new Blob(recorderChunks,{type:mime});const file=new File([blob],`recording-${new Date().toISOString().replace(/[:.]/g,'-')}.${ext}`,{type:mime});window.AppToast.show({message:t('recordingStopped')});await loadSource(file);}; recorder.start(250); recording=true;recordStartedAt=Date.now();$('#recordButton').classList.add('is-recording');$('#recordButtonLabel').textContent=`${t('stopRecording')} 0:00`;recordTimer=setInterval(()=>{$('#recordButtonLabel').textContent=`${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}`;},500);window.AppToast.show({message:t('recordingStarted')}); }
-        catch(e){showError('#sourceError',t('micDenied')); recorderStream?.getTracks().forEach(tr=>tr.stop()); recorderStream=null;recording=false;}
+        if(recording){
+          if(recorder?.state==='recording'){recorder.stop();$('#recordButton').disabled=true;$('#recordAgainButton').disabled=true;}
+          return;
+        }
+        if(requestingMic||['loading-source','loading-runtime','processing'].includes(state.phase))return;
+        if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
+          showError('#sourceError',t('micUnavailable'));return;
+        }
+        requestingMic=true;setPhase(state.phase);clearErrors();
+        try{
+          const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+          recorderStream=stream;
+          const options={};
+          for(const mime of ['audio/webm;codecs=opus','audio/ogg;codecs=opus','audio/mp4']){
+            if(MediaRecorder.isTypeSupported?.(mime)){options.mimeType=mime;break;}
+          }
+          recorderChunks=[];
+          recorder=new MediaRecorder(recorderStream,options);
+          recorder.ondataavailable=event=>{if(event.data?.size)recorderChunks.push(event.data);};
+          recorder.onstop=async()=>{
+            recording=false;requestingMic=false;clearInterval(recordTimer);
+            recorderStream?.getTracks().forEach(track=>track.stop());recorderStream=null;
+            $('#recordButton').classList.remove('is-recording');$('#recordAgainButton').classList.remove('is-recording');
+            $('#recordButtonLabel').textContent=t('record');$('#recordAgainButtonLabel').textContent=t('record');
+            setPhase(state.sourcePcm?'ready':'empty');
+            const mime=recorder.mimeType||'audio/webm';
+            const ext=mime.includes('mp4')?'m4a':mime.includes('ogg')?'ogg':'webm';
+            const blob=new Blob(recorderChunks,{type:mime});recorderChunks=[];
+            if(!blob.size){showError('#sourceError',t('recordingEmpty'));return;}
+            const file=new File([blob],`recording-${new Date().toISOString().replace(/[:.]/g,'-')}.${ext}`,{type:mime});
+            window.AppToast.show({message:t('recordingStopped')});
+            await loadSource(file);
+          };
+          recorder.start(250);requestingMic=false;recording=true;setPhase('recording');
+          recordStartedAt=Date.now();
+          $('#recordButton').classList.add('is-recording');$('#recordAgainButton').classList.add('is-recording');
+          $('#recordButtonLabel').textContent=`${t('stopRecording')} 0:00`;
+          $('#recordAgainButtonLabel').textContent=`${t('stopRecording')} 0:00`;
+          recordTimer=setInterval(()=>{
+            const label=`${t('stopRecording')} ${formatTime((Date.now()-recordStartedAt)/1000)}`;
+            $('#recordButtonLabel').textContent=label;$('#recordAgainButtonLabel').textContent=label;
+          },500);
+          window.AppToast.show({message:t('recordingStarted')});
+        }catch(error){
+          showError('#sourceError',t('micDenied'));
+          recorderStream?.getTracks().forEach(track=>track.stop());recorderStream=null;
+          requestingMic=false;recording=false;setPhase(state.sourcePcm?'ready':'empty');
+        }
       }
 
       $('#chooseFileButton').addEventListener('click',()=>$('#fileInput').click()); $('#replaceButton').addEventListener('click',()=>$('#fileInput').click()); $('#fileInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});$('#fileFallbackButton').addEventListener('click',()=>$('#fileFallbackInput').click());$('#fileFallbackInput').addEventListener('change',e=>{const f=e.target.files?.[0];e.target.value='';if(f)loadSource(f);});
       const drop=$('#dropZone'); ['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('is-over');})); ['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('is-over');})); drop.addEventListener('drop',e=>{const f=e.dataTransfer?.files?.[0];if(f)loadSource(f);});
-      $('#recordButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
-      $('#mobileSourceButton').addEventListener('click',()=>$('#sourceSection').scrollIntoView({behavior:'smooth',block:'start'})); $('#mobileProcessButton').addEventListener('click',()=>runDenoise('full')); $('#mobileSaveButton').addEventListener('click',saveResult);
+      $('#recordButton').addEventListener('click',toggleRecording); $('#recordAgainButton').addEventListener('click',toggleRecording); $('#previewButton').addEventListener('click',()=>runDenoise('preview')); $('#processButton').addEventListener('click',()=>runDenoise('full')); $('#cancelButton').addEventListener('click',()=>stopProcessing(true)); $('#mobileCancelButton').addEventListener('click',()=>stopProcessing(true)); $('#originalToggle').addEventListener('click',()=>switchResult('original')); $('#cleanedToggle').addEventListener('click',()=>switchResult('cleaned')); $('#saveButton').addEventListener('click',saveResult);
+      $('#mobileSourceButton').addEventListener('click',()=>$('#sourceSection').scrollIntoView({behavior:'smooth',block:'start'})); $('#mobileProcessButton').addEventListener('click',()=>runDenoise(state.result?'full':'preview')); $('#mobileSaveButton').addEventListener('click',saveResult);
       $('#languageButton').addEventListener('click',()=>{language=language==='ja'?'en':'ja';try{localStorage.setItem(`${APP_CONFIG.slug}:language`,language);}catch{}applyLanguage();});
       const help=$('#helpDialog');$('#helpButton').addEventListener('click',()=>help.showModal());$('#closeHelpButton').addEventListener('click',()=>help.close());help.addEventListener('click',e=>{if(e.target!==e.currentTarget)return;const r=help.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)help.close();});
 
       $('#brandName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;$('#versionBadge').textContent=`v${APP_CONFIG.version}`;$('#footerName').textContent=language==='ja'?(APP_CONFIG.nameJa||APP_CONFIG.name):APP_CONFIG.name;$('#buildVersion').textContent=APP_CONFIG.version;$('#dependencyCount').textContent=String(BUILD_MANIFEST.dependencies?.length||0);document.body.classList.add('has-mobile-bottom-bar'); setPhase('empty'); resetWaveSeeks(); applyLanguage();
-      if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined') $('#recordButton').disabled=true;
-      window.addEventListener('pagehide',()=>{stopProcessing(false);recorderStream?.getTracks().forEach(tr=>tr.stop());revokeObjectUrls();blobUrls.forEach(url=>URL.revokeObjectURL(url));blobUrls.clear();});
+      if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){ $('#recordButton').disabled=true;$('#recordAgainButton').disabled=true; }
+      window.addEventListener('pagehide',event=>{
+        stopProcessing(false);
+        recorderStream?.getTracks().forEach(track=>track.stop());
+        // A back/forward-cached page remains alive; its Blob URLs must remain valid on return.
+        if(event.persisted)return;
+        revokeObjectUrls();
+        blobUrls.forEach(url=>URL.revokeObjectURL(url));blobUrls.clear();
+      });
     })();
   </script>
 </body>

@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - "src/**"
+      - "tests/**"
+      - ".github/workflows/deploy-pages.yml"
       - "scripts/**"
       - "app.config.json"
       - "dependencies.json"
@@ -38,6 +40,12 @@ jobs:
         shell: pwsh
         run: ./scripts/check-repository.ps1
 
+      - name: Audio workflow regression tests
+        shell: pwsh
+        run: |
+          node --test tests/mobile-help-footer.test.cjs tests/audio-state-regression.test.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Audio workflow regressions failed.' }
+
       - name: Browser audio-processing smoke test
         shell: pwsh
         run: |
@@ -57,3 +65,48 @@ jobs:
             dist/.nojekyll
           if-no-files-found: error
           retention-days: 14
+
+  verify-release-bundle:
+    name: Verify release bundle before merge
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout release files
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Download exactly the validated standalone artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: standalone-html-${{ github.event.pull_request.head.sha || github.sha }}
+          path: package
+
+      - name: Test release packaging and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(jq -r '.version' app.config.json)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          prefix="htmlapps-voice-cleaner-v${version}"
+          test -s package/dist/index.html
+          test -s package/dist/index.self-extract.html
+          test -s LICENSE
+          test -s THIRD_PARTY_NOTICES.md
+          test -s README.md
+          test -s README.ja.md
+          mkdir -p release zip-content
+          cp package/dist/index.html "release/${prefix}.html"
+          cp package/dist/index.self-extract.html "release/${prefix}.self-extract.html"
+          cp "release/${prefix}.html" "zip-content/"
+          cp "release/${prefix}.self-extract.html" "zip-content/"
+          cp LICENSE THIRD_PARTY_NOTICES.md README.md README.ja.md zip-content/
+          (cd zip-content && zip -q -9 -r "../release/${prefix}.zip" .)
+          (cd release && sha256sum "${prefix}.html" "${prefix}.self-extract.html" "${prefix}.zip" > SHA256SUMS.txt)
+          (cd release && sha256sum -c SHA256SUMS.txt)
+          unzip -t "release/${prefix}.zip"
+          unzip -l "release/${prefix}.zip"
+          echo "Release files and checksums verified without publishing a tag or release."

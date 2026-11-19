@@ -18,11 +18,68 @@ page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()
 try{await page.goto(pathToFileURL(path.resolve(file)).href);await page.locator('#helpButton').waitFor();
 await page.waitForFunction(()=>/^\d+\.\d+\.\d+$/.test(document.querySelector('#buildVersion').textContent));
 if(await page.locator('html').getAttribute('lang')!==language)await page.locator('#languageButton').click();
-assert.equal((await page.locator('[data-i18n="localBadge"]').textContent()).trim(),language==='ja'?'完全ローカル処理':'Fully local processing');if(await page.locator('.local-badge').isVisible())await bounds(page.locator('.local-badge'),width,height,label,false);if(await page.locator('.local-badge').isVisible()){const text=await page.locator('.local-badge').evaluate(e=>{const r=document.createRange();r.selectNodeContents(e);const b=r.getBoundingClientRect();return{left:b.left,right:b.right,scroll:e.scrollWidth,client:e.clientWidth};});assert.ok(text.left>=-1&&text.right<=width+1&&text.scroll<=text.client+1,label+': actual privacy badge text '+JSON.stringify(text));}
+assert.equal((await page.locator('[data-i18n="localBadge"]').textContent()).trim(),language==='ja'?'完全ローカル処理':'Fully local processing');assert.equal(await page.locator('.local-badge').isVisible(),width>cfg.bp,label+': phone local badge visibility');if(await page.locator('.local-badge').isVisible())await bounds(page.locator('.local-badge'),width,height,label,false);if(await page.locator('.local-badge').isVisible()){const text=await page.locator('.local-badge').evaluate(e=>{const r=document.createRange();r.selectNodeContents(e);const b=r.getBoundingClientRect();return{left:b.left,right:b.right,scroll:e.scrollWidth,client:e.clientWidth};});assert.ok(text.left>=-1&&text.right<=width+1&&text.scroll<=text.client+1,label+': actual privacy badge text '+JSON.stringify(text));}
 assert.equal(await page.locator('body > footer').isVisible(),width>cfg.bp,label+': informational footer');
+assert.ok(await page.locator('.page-intro').isVisible(),label+': hero should be visible before loading audio');
 
-if(file==='dist/index.html'&&width===320){const samples=1600,wav=Buffer.alloc(44+samples*2);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(16000,24);wav.writeUInt32LE(32000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(samples*2,40);for(let i=0;i<samples;i++)wav.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*440/16000)*1000),44+i*2);await page.locator('#fileInput').setInputFiles({name:'synthetic-tone.wav',mimeType:'audio/wav',buffer:wav});await page.waitForFunction(()=>!document.querySelector('#mobileProcessButton').disabled);}
+if(file==='dist/index.html'&&[320,393,601,1360].includes(width)){const samples=1600,wav=Buffer.alloc(44+samples*2);wav.write('RIFF');wav.writeUInt32LE(wav.length-8,4);wav.write('WAVEfmt ',8);wav.writeUInt32LE(16,16);wav.writeUInt16LE(1,20);wav.writeUInt16LE(1,22);wav.writeUInt32LE(16000,24);wav.writeUInt32LE(32000,28);wav.writeUInt16LE(2,32);wav.writeUInt16LE(16,34);wav.write('data',36);wav.writeUInt32LE(samples*2,40);for(let i=0;i<samples;i++)wav.writeInt16LE(Math.round(Math.sin(i*2*Math.PI*440/16000)*1000),44+i*2);await page.locator('#fileInput').setInputFiles({name:'recording-2026-11-17T11-06-51-849Z-a-very-long-recording-name-that-should-truncate.wav',mimeType:'audio/wav',buffer:wav});await page.waitForFunction(()=>!document.querySelector('#mobileProcessButton').disabled);}
+if(file==='dist/index.html'&&[320,393,601,1360].includes(width)){
+  assert.equal(await page.locator('.page-intro').isVisible(),width>cfg.bp,
+    label+': hero visibility after audio has loaded');
+  assert.ok(await page.locator('body').evaluate(el=>el.classList.contains('has-loaded-source')),
+    label+': successful source sets loaded state');
+  if(width<=cfg.bp){
+    await page.setViewportSize({width:601,height});
+    assert.ok(await page.locator('.page-intro').isVisible(),label+': desktop resize restores intro');
+    await page.setViewportSize({width,height});
+    assert.ok(await page.locator('.page-intro').isHidden(),label+': phone resize hides intro again');
+  }
+}
+if(file==='dist/index.html'&&[320,393].includes(width)){
+  for(const selector of ['#sourceSection','#sourceCard','#sourceCard .source-summary','#sourceName','#replaceButton','#sourceCard .wave-wrap','#sourceAudio','#recordAgainButton']){
+    const loc=page.locator(selector);
+    assert.ok(await loc.isVisible(),label+': selected audio element visible '+selector);
+    const rect=await loc.boundingBox();
+    assert.ok(rect.x>=-1&&rect.x+rect.width<=width+1,label+': selected audio fits viewport '+selector+' '+JSON.stringify(rect));
+  }
+  const card=await page.locator('#sourceCard').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth}));
+  assert.ok(card.scroll<=card.client+1,label+': source card must not overflow '+JSON.stringify(card));
+  const filename=await page.locator('#sourceName').evaluate(el=>({scroll:el.scrollWidth,client:el.clientWidth,overflow:getComputedStyle(el).textOverflow}));
+  assert.ok(filename.scroll>filename.client&&filename.overflow==='ellipsis',label+': long filename should truncate inside its card '+JSON.stringify(filename));
+  assert.match(await page.locator('#sourceMeta').textContent(),language==='ja'?/モノラル/:/Mono/,label+': source channels localized');
+  assert.equal(await page.locator('#appMobileBottomBar').getAttribute('aria-label'),language==='ja'?'スマホの操作':'Mobile actions');
+  const originalLang=language;
+  await page.locator('#languageButton').click();
+  assert.match(await page.locator('#sourceMeta').textContent(),originalLang==='ja'?/Mono/:/モノラル/,label+': changing language updates loaded audio metadata');
+  await page.locator('#languageButton').click();
+}
 if(cfg.nav){assert.equal(await page.locator(cfg.nav).isVisible(),width<=cfg.bp,label+': functional navigation');if(width<=cfg.bp)await bounds(page.locator(cfg.nav),width,height,label);}
+// The phone header belongs at the top of the document, not pinned or auto-revealed.
+if(file==='dist/index.html'&&[320,393,1360].includes(width)){
+  const head=page.locator('.app-header');
+  const mainStart=await page.locator('main').evaluate(el=>el.getBoundingClientRect().top+scrollY);
+  const position=await head.evaluate(el=>getComputedStyle(el).position);
+  assert.equal(position,width<=cfg.bp?'static':'sticky',label+': header positioning');
+  await page.evaluate(()=>scrollTo({top:420,behavior:'instant'}));
+  if(width<=cfg.bp)await page.waitForFunction(()=>scrollY>=400,null,{timeout:5000});
+  const scrolledBox=await head.boundingBox();
+  if(width<=cfg.bp){
+    assert.ok(scrolledBox.y+scrolledBox.height<=1,label+': header scrolls out with document '+JSON.stringify(scrolledBox));
+    assert.ok(await page.locator(cfg.nav).isVisible(),label+': fixed phone actions remain visible');
+    await page.evaluate(()=>scrollTo({top:260,behavior:'instant'}));
+    await page.waitForFunction(()=>Math.abs(scrollY-260)<=1,null,{timeout:5000});
+    const upBox=await head.boundingBox();
+    assert.ok(upBox.y+upBox.height<=1,label+': partial upward scroll does not bring back header '+JSON.stringify(upBox));
+  }else{
+    assert.ok(scrolledBox.y>=-1&&scrolledBox.y<=2,label+': desktop header remains sticky '+JSON.stringify(scrolledBox));
+  }
+  await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
+  await page.waitForFunction(()=>scrollY<=1,null,{timeout:5000});
+  const topBox=await head.boundingBox();
+  assert.ok(topBox.y>=-1&&topBox.y<2,label+': header appears at top '+JSON.stringify(topBox));
+  const mainEnd=await page.locator('main').evaluate(el=>el.getBoundingClientRect().top+scrollY);
+  assert.ok(Math.abs(mainStart-mainEnd)<=1,label+': normal document flow remains unchanged');
+}
 for(const w of [cfg.bp+1,cfg.bp,width]){await page.setViewportSize({width:w,height});assert.equal(await page.locator('body > footer').isVisible(),w>cfg.bp,label+': footer resize');}
 await page.evaluate(()=>scrollTo({left:0,top:0,behavior:'instant'}));await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+': page width');if(cfg.nav&&width<=cfg.bp)await bounds(page.locator(cfg.nav),width,height,label);

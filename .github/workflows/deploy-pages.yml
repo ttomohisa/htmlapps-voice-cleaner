@@ -33,6 +33,20 @@ jobs:
         shell: pwsh
         run: ./scripts/check-repository.ps1
 
+      - name: Audio workflow regression tests
+        shell: pwsh
+        run: |
+          node --test tests/mobile-help-footer.test.cjs tests/audio-state-regression.test.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Audio workflow regressions failed.' }
+
+      - name: Browser audio-processing smoke test
+        shell: pwsh
+        run: |
+          npm install --no-save --no-package-lock --ignore-scripts --prefix .browser-smoke playwright-core@1.55.0
+          if ($LASTEXITCODE -ne 0) { throw 'Browser test setup failed.' }
+          node ./scripts/smoke-browser.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Browser audio processing smoke test failed.' }
+
       - name: Check whether GitHub Pages is enabled
         id: pages-status
         shell: pwsh
@@ -100,3 +114,89 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+
+  # A merged PR pushes its tested version to main. A version publishes only once.
+  release:
+    name: Tag and publish GitHub Release
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    concurrency:
+      group: voice-cleaner-version-release
+      cancel-in-progress: false
+    steps:
+      - name: Checkout merged commit
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Check version and existing release
+        id: version
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version="$(jq -r '.version' app.config.json)"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::app.config.json must contain a Semantic Versioning release version."
+            exit 1
+          fi
+          tag="v${version}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "GitHub Release $tag already exists; no duplicate will be created."
+            exit 0
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+            echo "::error::Tag $tag exists without a GitHub Release. Inspect it before retrying."
+            exit 1
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Download validated standalone HTML
+        if: steps.version.outputs.skip == 'false'
+        uses: actions/download-artifact@v8
+        with:
+          name: standalone-html-${{ github.sha }}
+          path: package
+
+      - name: Prepare versioned release files and checksums
+        if: steps.version.outputs.skip == 'false'
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          prefix="htmlapps-voice-cleaner-${RELEASE_TAG}"
+          test -s package/dist/index.html
+          test -s package/dist/index.self-extract.html
+          mkdir -p release zip-content
+          cp package/dist/index.html "release/${prefix}.html"
+          cp package/dist/index.self-extract.html "release/${prefix}.self-extract.html"
+          cp "release/${prefix}.html" "zip-content/"
+          cp "release/${prefix}.self-extract.html" "zip-content/"
+          cp LICENSE THIRD_PARTY_NOTICES.md README.md README.ja.md zip-content/
+          (cd zip-content && zip -q -9 -r "../release/${prefix}.zip" .)
+          (cd release && sha256sum "${prefix}.html" "${prefix}.self-extract.html" "${prefix}.zip" > SHA256SUMS.txt)
+          ls -lh release/
+
+      - name: Create tag and GitHub Release
+        if: steps.version.outputs.skip == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          # GitHub CLI creates the missing tag at this exact merged commit.
+          gh release create "$RELEASE_TAG" \
+            release/* \
+            --target "$GITHUB_SHA" \
+            --title "Voice Cleaner $RELEASE_TAG" \
+            --generate-notes \
+            --latest

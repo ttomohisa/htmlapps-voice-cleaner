@@ -3,7 +3,7 @@
   "name": "Voice Cleaner",
   "nameJa": "Voice Cleaner",
   "slug": "voice-cleaner",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Remove background noise from recorded speech locally in the browser.",
   "descriptionJa": "録音の背景ノイズを端末内で軽減し、処理前後を比較して保存します。",
   "defaultLanguage": "auto",

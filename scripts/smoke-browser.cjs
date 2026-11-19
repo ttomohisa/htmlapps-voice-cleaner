@@ -61,6 +61,7 @@ const server = http.createServer((req, res) => {
       if (url.startsWith('http') && !url.startsWith(origin)) logs.push('unexpected external request: ' + url);
     });
     await page.goto(origin + '/index.html', { waitUntil: 'load', timeout: 20000 });
+    assert.ok(await page.locator('.page-intro').isVisible(), 'Desktop hero remains visible on empty page');
     await page.locator('#fileInput').setInputFiles({
       name: 'test-speech-with-noise.wav',
       mimeType: 'audio/wav',
@@ -73,6 +74,7 @@ const server = http.createServer((req, res) => {
     }, null, { timeout: 20000 });
     const decodeError = await page.locator('#sourceError').textContent();
     assert.equal(decodeError, '', 'Input decode failed: ' + decodeError);
+    assert.ok(await page.locator('.page-intro').isVisible(), 'Desktop hero remains visible after loading audio');
     const sourceSeek = page.locator('#sourceWaveSeek');
     assert.ok(await sourceSeek.isEnabled(), 'Source waveform seek bar must be enabled');
     await sourceSeek.evaluate(el => {
@@ -110,6 +112,8 @@ const server = http.createServer((req, res) => {
     await page.locator('#cleanedToggle').click();
     await page.waitForFunction(()=>document.querySelector('#cleanedToggle').classList.contains('is-active') && Math.abs(document.querySelector('#resultAudio').currentTime - 1)<0.15,null,{timeout:10000});
     await page.setViewportSize({width:390,height:844});
+    assert.ok(await page.locator('.page-intro').isHidden(), 'Phone hero should disappear after audio loads');
+    assert.ok(await page.locator('#sourceSection').isVisible(), 'Audio panel remains visible without hero');
     await beforeSeek.scrollIntoViewIfNeeded();
     await beforeSeek.click(); // Native touch-sized slider interaction at the center.
     await page.waitForFunction(()=>Math.abs(document.querySelector('#resultAudio').currentTime - 1)<0.2,null,{timeout:10000});
@@ -124,8 +128,274 @@ const server = http.createServer((req, res) => {
     assert.equal(wavData.toString('ascii', 8, 12), 'WAVE', 'WAV format header missing');
     assert.equal(wavData.readUInt32LE(24), 16000, 'Incorrect WAV sample rate');
     assert.ok(wavData.length > 32000, 'Exported WAV contains too little audio');
+
+    // Browser back/forward cache must not revoke the audio Blob URLs.
+    await page.evaluate(()=>{
+      const transition=new PageTransitionEvent('pagehide',{persisted:true});
+      window.dispatchEvent(transition);
+      document.querySelector('#sourceAudio').load();
+      document.querySelector('#resultAudio').load();
+    });
+    await page.waitForFunction(()=>document.querySelector('#sourceAudio').readyState>=1
+      && document.querySelector('#resultAudio').readyState>=1,null,{timeout:10000});
+    assert.equal(await page.locator('#sourceAudio').evaluate(el=>el.error?.code||0),0,'Source URL must survive BFCache');
+    assert.equal(await page.locator('#resultAudio').evaluate(el=>el.error?.code||0),0,'Result URL must survive BFCache');
+
+    // A preview made after a full result must not silently replace its saved WAV.
+    await page.locator('#outputFilename').fill('review-copy');
+    await sourceSeek.evaluate(el=>{
+      el.value='1.1';
+      el.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    await page.waitForFunction(()=>document.querySelector('#sourceAudio').currentTime>1.0);
+    await page.locator('#previewButton').click();
+    await page.waitForFunction(()=>{
+      const text=document.querySelector('#saveScope')?.textContent||'';
+      return text.includes('previous')||text.includes('前回');
+    },null,{timeout:45000});
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Preview must retain the last full WAV');
+    const saveAfterPreview=page.waitForEvent('download',{timeout:10000});
+    await page.locator('#mobileSaveButton').click();
+    const retained=await saveAfterPreview;
+    assert.equal(retained.suggestedFilename(),'review-copy.wav','Edited filename must be respected');
+    assert.equal(fs.readFileSync(await retained.path()).length,wavData.length,'A preview must not truncate the full WAV');
+
+    // A completed playback position must still produce a usable preview.
+    await sourceSeek.focus();
+    await page.keyboard.press('End');
+    await page.waitForFunction(()=>document.querySelector('#sourceAudio').currentTime>=1.98);
+    await page.locator('#previewButton').click();
+    await page.waitForFunction(()=>{
+      const result=document.querySelector('#resultContext')?.textContent||'';
+      return result.includes('0:00')&&result.includes('0:02')&&document.querySelector('#mobileProcessing').hidden;
+    },null,{timeout:45000});
+    assert.ok(await page.locator('#resultSection').isVisible(),'Preview at playback end must produce a result');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Full WAV remains saveable after end-of-playback preview');
+
+    // Invalid replacement and canceled valid replacement leave the existing result intact.
+    await page.locator('#fileInput').setInputFiles({
+      name:'invalid.txt',mimeType:'text/plain',buffer:Buffer.from('not audio')
+    });
+    await page.waitForFunction(()=>document.querySelector('#sourceError').textContent.trim().length>0);
+    assert.equal(await page.locator('#sourceName').textContent(),'test-speech-with-noise.wav');
+    assert.ok(await page.locator('.page-intro').isHidden(),'Invalid replacement must not reveal the hero');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Decode failure must retain full result');
+    assert.equal(await page.locator('#outputFilename').inputValue(),'review-copy');
+    const alternate={name:'replacement.wav',mimeType:'audio/wav',buffer:pcmWav(3)};
+    await page.locator('#fileInput').setInputFiles(alternate);
+    await page.locator('#appConfirmDialog').waitFor({state:'visible'});
+    await page.locator('#appConfirmCancel').click();
+    assert.equal(await page.locator('#sourceName').textContent(),'test-speech-with-noise.wav');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Cancel replacement must retain full result');
+    assert.equal(await page.locator('#outputFilename').inputValue(),'review-copy');
+    // The close icon must behave like Cancel and preserve the current work.
+    await page.locator('#fileInput').setInputFiles(alternate);
+    await page.locator('#appConfirmDialog').waitFor({state:'visible'});
+    await page.locator('#appConfirmClose').click();
+    await page.locator('#appConfirmDialog').waitFor({state:'hidden'});
+    assert.equal(await page.locator('#sourceName').textContent(),'test-speech-with-noise.wav');
+    assert.equal(await page.locator('#outputFilename').inputValue(),'review-copy');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled(),'Close replacement must preserve full WAV');
+    await page.locator('#fileInput').setInputFiles(alternate);
+    await page.locator('#appConfirmDialog').waitFor({state:'visible'});
+    await page.locator('#appConfirmOk').click();
+    await page.waitForFunction(()=>document.querySelector('#sourceName').textContent==='replacement.wav'
+      && document.querySelector('#resultSection').hidden);
+    assert.ok(await page.locator('#mobileSaveButton').isDisabled(),'Accepted replacement must clear the old WAV');
+
+    // After the first file/recording, the microphone action must remain reachable.
+    const fakeMicWav=pcmWav(.6).toString('base64');
+    await page.evaluate((audioBase64)=>{
+      Object.defineProperty(navigator.mediaDevices,'getUserMedia',{configurable:true,value:async()=>({
+        getTracks:()=>[{stop(){}}]
+      })});
+      window.MediaRecorder=class {
+        static isTypeSupported(){return false;}
+        constructor(){this.state='inactive';this.mimeType='audio/wav';}
+        start(){this.state='recording';}
+        stop(){
+          this.state='inactive';
+          const bin=atob(audioBase64);
+          const bytes=Uint8Array.from(bin,ch=>ch.charCodeAt(0));
+          queueMicrotask(()=>{
+            this.ondataavailable?.({data:new Blob([bytes],{type:'audio/wav'})});
+            this.onstop?.();
+          });
+        }
+      };
+    },fakeMicWav);
+    await page.locator('#recordAgainButton').click();
+    await page.waitForFunction(()=>document.querySelector('#recordAgainButton').classList.contains('is-recording'));
+    assert.match(await page.locator('#recordAgainButtonLabel').textContent(),/Stop recording|録音を停止/);
+    await page.locator('#recordAgainButton').click();
+    await page.locator('#appConfirmDialog').waitFor({state:'visible',timeout:15000});
+    await page.locator('#appConfirmCancel').click();
+    assert.equal(await page.locator('#sourceName').textContent(),'replacement.wav',
+      'Declining rerecorded audio must preserve existing source');
+    assert.ok(await page.locator('#recordAgainButton').isEnabled(),'Recording remains reachable after canceling replacement');
+
+    // Simulate a Worker delivering a queued completion after termination. Only the new run owns the result.
+    await page.evaluate(()=>{
+      window.__fakeWorkers=[];
+      window.Worker=class {
+        constructor(){this.id=window.__fakeWorkers.length+1;window.__fakeWorkers.push(this);}
+        postMessage(msg){
+          const count=this.id===1?16000:msg.pcmBuffer.byteLength/4;
+          const output=new Float32Array(count);
+          setTimeout(()=>this.onmessage?.({data:{type:'done',buffer:output.buffer}}),this.id===1?180:30);
+        }
+        terminate(){this.terminated=true;}
+      };
+    });
+    assert.match(await page.locator('#mobileProcessLabel').textContent(),/Try 10 sec|10秒試す/);
+    assert.ok(await page.locator('#processButton').isVisible(),'Direct full-file action remains available on phones');
+    await page.locator('#mobileProcessButton').click();
+    await page.waitForFunction(()=>window.__fakeWorkers.length===1);
+    assert.ok(await page.locator('#mobileProcessing').isVisible(),'Processing progress is visible in fixed phone bar');
+    assert.ok(await page.locator('#mobileCancelButton').isVisible(),'Phone cancellation is reachable without scrolling');
+    assert.ok(await page.locator('#mobileProcessButton').isHidden(),'Processing replaces the phone action bar');
+    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'Phone progress does not overflow horizontally');
+    await page.locator('#mobileCancelButton').click();
+    assert.ok(await page.locator('#mobileProcessing').isHidden(),'Phone cancel returns to normal actions');
+    assert.ok(await page.locator('#resultSection').isHidden(),'Cancel should keep the new source without results');
+    assert.match(await page.locator('#mobileProcessLabel').textContent(),/Try 10 sec|10秒試す/);
+    await page.locator('#mobileProcessButton').click();
+    await page.waitForFunction(()=>!document.querySelector('#resultSection').hidden && document.querySelector('#resultSubtitle').textContent.match(/10.second preview|10秒プレビュー/) && document.querySelector('#mobileProcessing').hidden,null,{timeout:10000});
+    assert.ok(await page.locator('#mobileSaveButton').isDisabled(),'Preview does not permit saving a partial WAV');
+    assert.match(await page.locator('#mobileProcessLabel').textContent(),/Clean all|全体を処理/);
+    await page.locator('#mobileProcessButton').click();
+    await page.waitForFunction(()=>document.querySelector('#resultContext').textContent.includes('0:03') && !document.querySelector('#mobileSaveButton').disabled);
+    await page.waitForTimeout(220);
+    assert.ok((await page.locator('#resultContext').textContent()).includes('0:03'),'Late canceled Worker overwrote the current run');
+    assert.ok(await page.locator('#mobileSaveButton').isEnabled());
+    assert.deepEqual(logs.filter(line=>line.startsWith('JS:')),[],'Unexpected page errors');
     assert.ok(logs.every(line => !line.startsWith('unexpected external request:')), 'Runtime requested external network');
-    console.log('[PASS] 2-second speech/noise WAV -> GTCRN WASM -> playback result -> WAV download; no external network.');
+    console.log('[PASS] GTCRN/WAV, preview retention, replacement protection, stale Worker and offline checks.');
+
+    // Exercise the real GTCRN model on a public-domain recorded human voice,
+    // with deterministic fan/hiss overlay. This is an objective regression,
+    // not a subjective intelligibility or microphone quality assessment.
+    const voicePage=await browser.newPage({viewport:{width:980,height:780},acceptDownloads:true});
+    try{
+      const crypto=require('node:crypto');
+      const fixtureBase64=fs.readFileSync(path.resolve('tests/fixtures/jfk-public-domain.wav.base64'),'utf8');
+      const speechWav=Buffer.from(fixtureBase64,'base64');
+      assert.equal(crypto.createHash('sha256').update(speechWav).digest('hex'),
+        '59dfb9a4acb36fe2a2affc14bacbee2920ff435cb13cc314a08c13f66ba7860e',
+        'Public-domain voice fixture was corrupted');
+      const readMono16=(buffer)=>{
+        assert.equal(buffer.toString('ascii',0,4),'RIFF');
+        assert.equal(buffer.toString('ascii',8,12),'WAVE');
+        assert.equal(buffer.readUInt16LE(20),1,'Fixture must be PCM');
+        assert.equal(buffer.readUInt16LE(22),1,'Fixture must be mono');
+        assert.equal(buffer.readUInt32LE(24),16000,'Fixture must be 16 kHz');
+        const dataStart=(()=>{
+          let pos=12;
+          while(pos+8<=buffer.length){
+            const size=buffer.readUInt32LE(pos+4);
+            if(buffer.toString('ascii',pos,pos+4)==='data')return {offset:pos+8,size};
+            pos+=8+size+(size%2);
+          }
+          throw new Error('Missing WAV data chunk');
+        })();
+        const len=dataStart.size/2;
+        assert.ok(len>16000*3 && dataStart.offset+dataStart.size<=buffer.length);
+        const pcm=new Float32Array(len);
+        for(let i=0;i<len;i++)pcm[i]=buffer.readInt16LE(dataStart.offset+i*2)/32768;
+        return pcm;
+      };
+      const reference=readMono16(speechWav);
+      const noisy=new Float32Array(reference.length);
+      let seed=13579;
+      for(let i=0;i<reference.length;i++){
+        seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+        const hiss=(seed/4294967296-.5)*.022;
+        const fan=.045*Math.sin(2*Math.PI*120*i/16000)+.015*Math.sin(2*Math.PI*1010*i/16000);
+        noisy[i]=Math.max(-.995,Math.min(.995,reference[i]*.72+fan+hiss));
+      }
+      const mixedWav=Buffer.alloc(44+noisy.length*2);
+      mixedWav.write('RIFF',0);mixedWav.writeUInt32LE(mixedWav.length-8,4);
+      mixedWav.write('WAVEfmt ',8);mixedWav.writeUInt32LE(16,16);
+      mixedWav.writeUInt16LE(1,20);mixedWav.writeUInt16LE(1,22);
+      mixedWav.writeUInt32LE(16000,24);mixedWav.writeUInt32LE(32000,28);
+      mixedWav.writeUInt16LE(2,32);mixedWav.writeUInt16LE(16,34);
+      mixedWav.write('data',36);mixedWav.writeUInt32LE(noisy.length*2,40);
+      for(let i=0;i<noisy.length;i++)mixedWav.writeInt16LE(Math.round(noisy[i]*32767),44+i*2);
+      await voicePage.goto(origin+'/index.html',{waitUntil:'load',timeout:20000});
+      await voicePage.locator('#fileInput').setInputFiles({
+        name:'recorded-speech-with-fan.wav',mimeType:'audio/wav',buffer:mixedWav
+      });
+      await voicePage.waitForFunction(()=>!document.querySelector('#processButton').disabled,null,{timeout:30000});
+      await voicePage.locator('#processButton').click();
+      await voicePage.waitForFunction(()=>!document.querySelector('#saveButton').disabled ||
+        document.querySelector('#processError').textContent.trim().length>0,null,{timeout:90000});
+      assert.equal(await voicePage.locator('#processError').textContent(),'','Voice sample denoising failed');
+      const saved=voicePage.waitForEvent('download',{timeout:15000});
+      await voicePage.locator('#saveButton').click();
+      const cleaned=readMono16(fs.readFileSync(await (await saved).path()));
+      assert.equal(cleaned.length,reference.length,'Voice sample must retain its duration');
+      const measure=(array,mask)=>{
+        let sum=0,peak=0,count=0;
+        const frameSize=640;
+        for(let start=0;start<array.length;start+=frameSize){
+          const end=Math.min(start+frameSize,array.length);
+          let refPower=0;
+          for(let i=start;i<end;i++)refPower+=reference[i]*reference[i];
+          const rms=Math.sqrt(refPower/(end-start));
+          if(mask==='speech' && rms<.035 || mask==='quiet' && rms>.012)continue;
+          for(let i=start;i<end;i++){const v=array[i];sum+=v*v;peak=Math.max(peak,Math.abs(v));count++;}
+        }
+        return {rms:Math.sqrt(sum/Math.max(1,count)),peak,count};
+      };
+      const speechInput=measure(noisy,'speech'),speechOutput=measure(cleaned,'speech');
+      const quietInput=measure(noisy,'quiet'),quietOutput=measure(cleaned,'quiet');
+      assert.ok(speechOutput.count>1000,'Recorded speech test needs active speech');
+      assert.ok(speechOutput.rms>.006,'Denoising unexpectedly removed recorded speech');
+      assert.ok(speechOutput.peak<=.999,'Denoised WAV has clipped peaks');
+      assert.ok(quietOutput.rms<quietInput.rms*1.5,'Noise-only portions must not become substantially louder');
+      console.log('[PASS] Recorded human speech and fan-noise GTCRN processing. Levels:',
+        JSON.stringify({
+          speechInputRms:speechInput.rms.toFixed(4),speechOutputRms:speechOutput.rms.toFixed(4),
+          fanInputRms:quietInput.rms.toFixed(4),fanOutputRms:quietOutput.rms.toFixed(4),
+          outputPeak:speechOutput.peak.toFixed(4)
+        }));
+    }finally{await voicePage.close();}
+
+    // Delay first-time engine setup, then cancel before the Worker could begin.
+    const slowPage=await browser.newPage({viewport:{width:980,height:800}});
+    try{
+      await slowPage.addInitScript(()=>{
+        window.__startedWorkers=0;
+        window.Worker=class{
+          constructor(){window.__startedWorkers++;}
+          postMessage(){} terminate(){}
+        };
+      });
+      await slowPage.goto(origin+'/index.html',{waitUntil:'load'});
+      await slowPage.locator('#fileInput').setInputFiles({
+        name:'engine-cancel.wav',mimeType:'audio/wav',buffer:pcmWav(1)
+      });
+      await slowPage.waitForFunction(()=>!document.querySelector('#processButton').disabled);
+      // Dispatch both actions within one browser task, before the first runtime await can settle.
+      await slowPage.evaluate(()=>{
+        const run=document.querySelector('#processButton');
+        const cancel=document.querySelector('#cancelButton');
+        run.click();
+        if(cancel.disabled)throw new Error('Engine startup did not enable cancellation');
+        cancel.click();
+        if(run.disabled)throw new Error('Cancellation did not restore the action');
+        if(!document.querySelector('#resultSection').hidden)throw new Error('Canceled run exposed a result');
+        run.click();
+      });
+      await slowPage.waitForFunction(()=>window.__startedWorkers>=1,null,{timeout:45000});
+      // A late canceled startup must not start its own Worker in addition to the new run.
+      await slowPage.waitForTimeout(500);
+      assert.equal(await slowPage.evaluate(()=>window.__startedWorkers),1,
+        'Canceled engine startup began a stale Worker alongside the current run');
+      assert.ok(await slowPage.locator('#resultSection').isHidden());
+      console.log('[PASS] Cancel during first-time engine preparation.');
+    }finally{await slowPage.close();}
+
   } catch (error) {
     console.error('[FAIL] Browser audio smoke test:', error.stack || error);
     for (const line of logs) console.error('  ' + line);

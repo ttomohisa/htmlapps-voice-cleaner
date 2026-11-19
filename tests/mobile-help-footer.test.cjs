@@ -3,3 +3,48 @@ const html=fs.readFileSync('src/index.template.html','utf8');
 test('phone informational footer only',()=>assert.ok(html.includes('@media (max-width: 600px) { body > footer { display: none; } }')));
 test('build version belongs to final Help metadata',()=>{assert.match(html, /class="help-build"/);assert.equal((html.match(/id="buildVersion"/g)||[]).length,1);const start=html.lastIndexOf('<dialog',html.indexOf('id="helpDialog"'));const end=html.indexOf('</dialog>',start);assert.ok(html.indexOf('id="buildVersion"')>start&&html.indexOf('id="buildVersion"')<end);});
 test('all metadata IDs occur once in final Help child',()=>{const start=html.lastIndexOf('<dialog',html.indexOf('id="helpDialog"'));const end=html.indexOf('</dialog>',start);const help=html.slice(start,end);for(const id of ["buildVersion", "dependencyCount"]){assert.equal(html.split('id="'+id+'"').length-1,1);assert.ok(help.includes('id="'+id+'"'));}assert.match(help,/<section class="help-build">[\s\S]*<\/section>\s*<\/div>\s*$/);});
+
+test('intro is concise and duplicate feature cards are removed',()=>{
+  assert.match(html,/<h2 id="heroTitle" data-i18n="introTitle">音声のノイズを減らす<\/h2>/);
+  assert.match(html,/<p data-i18n="lead">音声・動画の背景ノイズを減らして、WAVで保存します。<\/p>/);
+  assert.doesNotMatch(html,/id="aboutTitle"|notice-card/);
+  assert.match(html,/introTitle:'Reduce noise in audio recordings'/);
+});
+test('loaded audio hides the complete hero on phones only',()=>{
+  assert.match(html,/@media \(max-width: 600px\)[\s\S]*?body\.has-loaded-source \.page-intro \{ display: none; \}/);
+  assert.match(html,/document\.body\.classList\.toggle\('has-loaded-source',Boolean\(state\.sourcePcm\)\)/);
+  assert.match(html,/<section class="page-intro" aria-labelledby="heroTitle">/);
+});
+
+test('local processing badge is hidden only on phone widths',()=>{
+  assert.match(html,/@media \(max-width: 600px\)[\s\S]*?\.local-badge\s*\{\s*display:\s*none;/);
+});
+
+test('release is tied to main and a new SemVer tag',()=>{
+  const cfg=JSON.parse(fs.readFileSync('app.config.json','utf8'));
+  const workflow=fs.readFileSync('.github/workflows/deploy-pages.yml','utf8');
+  assert.match(cfg.version,/^\d+\.\d+\.\d+$/);
+  assert.ok(workflow.includes('    branches:\n      - main'),'main push trigger');
+  assert.match(workflow,/release:\s*\n\s*name: Tag and publish GitHub Release/);
+  assert.ok(workflow.includes("if: github.event_name == 'push'"));
+  assert.ok(workflow.includes('needs: build'));
+  assert.ok(workflow.includes('    permissions:\n      contents: write'));
+  assert.ok(workflow.includes('gh release create'));
+  assert.ok(workflow.includes('actions/download-artifact@v8'));
+  assert.ok(workflow.includes('--target "$GITHUB_SHA"'));
+  assert.ok(workflow.includes('sha256sum'));
+});
+
+test('phone header appears only at the top and desktop remains sticky',()=>{
+  assert.match(html,/@media \(max-width: 600px\)[\s\S]*?\.app-header \{ position: static; \}/);
+  assert.match(html,/\.app-header \{[\s\S]*?position: sticky;/);
+  assert.doesNotMatch(html,/is-scroll-hidden|schedulePhoneHeader|headerScrollTravel/);
+});
+
+test('file drop icon uses downward arrow',()=>{
+  const match=html.match(/<div class="drop-zone-icon" aria-hidden="true">([\s\S]*?)<\/div>/);
+  assert.ok(match,'Drop zone icon should exist');
+  assert.match(match[1],/<path d="M12 3v11"\/>/);
+  assert.match(match[1],/<path d="m8 10 4 4 4-4"\/>/);
+  assert.match(match[1],/<path d="M5 16v4h14v-4"\/>/);
+});
