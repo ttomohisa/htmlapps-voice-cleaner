@@ -18,6 +18,7 @@ Version 1.0.1. Browser Kitty. Primary purpose: locally reduce background noise i
 - Error: provide a localized error, preserve the current source and last successful results, and allow retry.
 
 ## Phone workflow
+- Once audio has been decoded successfully, hide the complete hero section (heading and explanatory copy) at phone widths of 600px or less. Keep it visible before the first successful load and on desktop. Invalid or canceled replacements must not reset the loaded-source state.
 ## Phone header behavior
 
 - At viewport widths of 600px or less, the header is a normal element at the top of the document, not fixed or sticky. It scrolls out with the page and does not reappear until the user returns to the top.
